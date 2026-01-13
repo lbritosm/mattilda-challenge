@@ -107,7 +107,7 @@ def test_account_status(client, db):
         client.post("/api/v1/invoices/", json=invoice_data)
     
     # Obtener estado de cuenta
-    response = client.get(f"/api/v1/accounts/students/{student_id}")
+    response = client.get(f"/api/v1/students/{student_id}/statement")
     assert response.status_code == 200
     data = response.json()
     assert float(data["total_invoiced"]) == 2000.00

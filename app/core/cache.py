@@ -4,7 +4,6 @@ Módulo de cache con Redis para optimizar consultas pesadas.
 import json
 import logging
 from typing import Optional, Any
-from functools import wraps
 import redis
 from app.core.config import settings
 
@@ -39,60 +38,6 @@ def get_redis_client() -> Optional[redis.Redis]:
         logger.warning(f"Redis no disponible: {e}. Cache deshabilitado.")
         _redis_client = None
         return None
-
-
-def cache_statement(key: str, ttl: int = 60):
-    """
-    Decorador para cachear resultados de statements.
-    
-    Args:
-        key: Patrón de clave (puede incluir {student_id} o {school_id})
-        ttl: Tiempo de vida en segundos (default: 60)
-    """
-    def decorator(func):
-        @wraps(func)
-        async def wrapper(*args, **kwargs):
-            # Construir clave de cache
-            cache_key = key.format(**kwargs)
-            
-            # Intentar obtener de cache
-            redis_client = get_redis_client()
-            if redis_client:
-                try:
-                    cached = redis_client.get(cache_key)
-                    if cached:
-                        logger.debug(f"Cache hit: {cache_key}")
-                        return json.loads(cached)
-                except Exception as e:
-                    logger.warning(f"Error leyendo cache: {e}")
-            
-            # Si no está en cache, ejecutar función
-            logger.debug(f"Cache miss: {cache_key}")
-            result = await func(*args, **kwargs) if hasattr(func, '__call__') and hasattr(func, '__code__') else func(*args, **kwargs)
-            
-            # Guardar en cache
-            if redis_client:
-                try:
-                    # Convertir a dict si es un modelo Pydantic
-                    if hasattr(result, 'model_dump'):
-                        result_dict = result.model_dump()
-                    elif hasattr(result, 'dict'):
-                        result_dict = result.dict()
-                    else:
-                        result_dict = result
-                    
-                    redis_client.setex(
-                        cache_key,
-                        ttl,
-                        json.dumps(result_dict, default=str)
-                    )
-                    logger.debug(f"Cache guardado: {cache_key}")
-                except Exception as e:
-                    logger.warning(f"Error guardando en cache: {e}")
-            
-            return result
-        return wrapper
-    return decorator
 
 
 def get_cached_statement(key: str) -> Optional[Any]:

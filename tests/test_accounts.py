@@ -34,15 +34,15 @@ def test_school_account_status(client, db):
         client.post("/api/v1/invoices/", json=invoice_data)
     
     # Obtener estado de cuenta del colegio
-    response = client.get(f"/api/v1/accounts/schools/{school_id}")
+    response = client.get(f"/api/v1/schools/{school_id}/statement")
     assert response.status_code == 200
     data = response.json()
     assert float(data["total_invoiced"]) == 1000.00
     assert data["total_students"] == 2
 
 
-def test_student_debt(client, db):
-    """Test para calcular deuda de un estudiante"""
+def test_student_account_status(client, db):
+    """Test para obtener estado de cuenta de un estudiante"""
     # Crear colegio y estudiante
     school_data = {"name": "Colegio Test", "is_active": True}
     school_response = client.post("/api/v1/schools/", json=school_data)
@@ -68,9 +68,10 @@ def test_student_debt(client, db):
     }
     client.post("/api/v1/invoices/", json=invoice_data)
     
-    # Calcular deuda
-    response = client.get(f"/api/v1/accounts/students/{student_id}/debt/{school_id}")
+    # Obtener estado de cuenta del estudiante
+    response = client.get(f"/api/v1/students/{student_id}/statement")
     assert response.status_code == 200
     data = response.json()
-    assert float(data["debt"]) == 1000.00
+    assert float(data["total_invoiced"]) == 1000.00
+    assert float(data["total_pending"]) == 1000.00
 
