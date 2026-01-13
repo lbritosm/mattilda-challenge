@@ -15,6 +15,8 @@ Este proyecto implementa un sistema completo para la gestión de:
 - ✅ CRUD completo para Colegios, Estudiantes y Facturas
 - ✅ Sistema de pagos con actualización automática de estados
 - ✅ Cálculo de estados de cuenta (colegio y estudiante)
+- ✅ Cache con Redis para optimizar consultas pesadas (statements)
+- ✅ Invalidación automática de cache cuando cambian datos financieros
 - ✅ Paginación en todos los endpoints de listado
 - ✅ Validación de datos con Pydantic
 - ✅ Documentación automática (OpenAPI/Swagger)
@@ -55,7 +57,7 @@ cp .env.example .env
 
 3. **Levantar los servicios con Docker Compose**:
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 Esto levantará:
@@ -65,7 +67,7 @@ Esto levantará:
 
 4. **Verificar que los servicios estén corriendo**:
 ```bash
-docker-compose ps
+docker compose ps
 ```
 
 5. **Acceder a la documentación de la API**:
@@ -82,6 +84,7 @@ Abre tu navegador en: http://localhost:8000/docs
 - `PUT /api/v1/schools/{id}` - Actualizar colegio
 - `DELETE /api/v1/schools/{id}` - Eliminar colegio
 - `GET /api/v1/schools/{id}/students/count` - Contar estudiantes
+- `GET /api/v1/schools/{id}/statement` - Estado de cuenta del colegio (con cache)
 
 #### Students
 - `POST /api/v1/students/` - Crear estudiante
@@ -89,6 +92,7 @@ Abre tu navegador en: http://localhost:8000/docs
 - `GET /api/v1/students/{id}` - Obtener estudiante por ID
 - `PUT /api/v1/students/{id}` - Actualizar estudiante
 - `DELETE /api/v1/students/{id}` - Eliminar estudiante
+- `GET /api/v1/students/{id}/statement` - Estado de cuenta del estudiante (con cache)
 
 #### Invoices
 - `POST /api/v1/invoices/` - Crear factura
@@ -98,11 +102,6 @@ Abre tu navegador en: http://localhost:8000/docs
 - `DELETE /api/v1/invoices/{id}` - Eliminar factura
 - `POST /api/v1/invoices/{id}/payments` - Crear pago para una factura
 
-#### Accounts
-- `GET /api/v1/accounts/schools/{id}` - Estado de cuenta del colegio
-- `GET /api/v1/accounts/students/{id}` - Estado de cuenta del estudiante
-- `GET /api/v1/accounts/students/{student_id}/debt/{school_id}` - Deuda de estudiante
-- `GET /api/v1/accounts/schools/{id}/total-debt` - Deuda total del colegio
 
 #### Health & Metrics
 - `GET /health` - Health check
@@ -167,12 +166,12 @@ curl -X POST "http://localhost:8000/api/v1/invoices/1/payments" \
 
 #### Consultar Estado de Cuenta de un Estudiante
 ```bash
-curl "http://localhost:8000/api/v1/accounts/students/1"
+curl "http://localhost:8000/api/v1/students/1/statement"
 ```
 
 #### Consultar Estado de Cuenta de un Colegio
 ```bash
-curl "http://localhost:8000/api/v1/accounts/schools/1"
+curl "http://localhost:8000/api/v1/schools/1/statement"
 ```
 
 ## 🧪 Pruebas
@@ -204,7 +203,7 @@ pytest tests/test_schools.py
 
 ## 📊 Cargar Datos de Ejemplo
 
-Para cargar datos de ejemplo en la base de datos, puedes usar el script:
+Para cargar datos de ejemplo en la base de datos (con personajes de Los Simpsons), puedes usar el script:
 
 ```bash
 python scripts/load_sample_data.py
@@ -213,8 +212,14 @@ python scripts/load_sample_data.py
 O ejecutarlo dentro del contenedor:
 
 ```bash
-docker-compose exec backend python scripts/load_sample_data.py
+docker compose exec backend python scripts/load_sample_data.py
 ```
+
+El script crea:
+- 2 colegios (Escuela Primaria de Springfield e Instituto Springfield)
+- 5 estudiantes (Bart, Lisa, Milhouse, Nelson y Martin)
+- 6 facturas de ejemplo
+- 3 pagos de ejemplo
 
 ## 🏗️ Estructura del Proyecto
 
@@ -225,11 +230,11 @@ mattilda/
 │   │   └── routes/
 │   │       ├── schools.py      # Rutas de colegios
 │   │       ├── students.py      # Rutas de estudiantes
-│   │       ├── invoices.py      # Rutas de facturas
-│   │       └── accounts.py      # Rutas de estados de cuenta
+│   │       └── invoices.py      # Rutas de facturas
 │   ├── core/
 │   │   ├── config.py           # Configuración
-│   │   └── database.py         # Configuración de BD
+│   │   ├── database.py         # Configuración de BD
+│   │   └── cache.py            # Cache con Redis
 │   ├── models/
 │   │   ├── school.py           # Modelo School
 │   │   ├── student.py          # Modelo Student
@@ -268,9 +273,25 @@ mattilda/
 Puedes configurar las siguientes variables en el archivo `.env`:
 
 - `DATABASE_URL`: URL de conexión a PostgreSQL
-- `REDIS_URL`: URL de conexión a Redis (opcional)
+- `REDIS_URL`: URL de conexión a Redis (opcional, para cache)
 - `ENVIRONMENT`: Entorno (development, production)
 - `LOG_LEVEL`: Nivel de logging (INFO, DEBUG, etc.)
+
+### Cache con Redis
+
+El sistema utiliza Redis para cachear los endpoints de statements (estados de cuenta), que son consultas pesadas con agregaciones:
+
+- **Endpoints cacheados**:
+  - `GET /api/v1/students/{id}/statement`
+  - `GET /api/v1/schools/{id}/statement`
+
+- **TTL (Time To Live)**: 60 segundos por defecto
+
+- **Invalidación automática**: El cache se invalida automáticamente cuando:
+  - Se crea, actualiza o elimina una factura
+  - Se crea un pago
+
+- **Degradación elegante**: Si Redis no está disponible, el sistema funciona normalmente sin cache
 
 ### Paginación
 
@@ -280,39 +301,37 @@ Los endpoints de listado soportan paginación con los parámetros:
 
 ## 📝 Preguntas que Responde el Sistema
 
-✅ **¿Cuánto le debe un estudiante a un colegio?**
-- Endpoint: `GET /api/v1/accounts/students/{student_id}/debt/{school_id}`
-
-✅ **¿Cuánto le deben todos los estudiantes a un colegio?**
-- Endpoint: `GET /api/v1/accounts/schools/{school_id}/total-debt`
-
 ✅ **¿Cuántos alumnos tiene un colegio?**
 - Endpoint: `GET /api/v1/schools/{school_id}/students/count`
 
-✅ **¿Cuál es el estado de cuenta de un colegio o de un estudiante?**
-- Endpoint: `GET /api/v1/accounts/schools/{school_id}`
-- Endpoint: `GET /api/v1/accounts/students/{student_id}`
+✅ **¿Cuál es el estado de cuenta de un colegio?**
+- Endpoint: `GET /api/v1/schools/{school_id}/statement`
+- Incluye: total facturado, total pagado, total pendiente, número de estudiantes y listado de facturas
+
+✅ **¿Cuál es el estado de cuenta de un estudiante?**
+- Endpoint: `GET /api/v1/students/{student_id}/statement`
+- Incluye: total facturado, total pagado, total pendiente y listado de facturas del estudiante
 
 ## 🐳 Comandos Docker
 
 ```bash
 # Levantar todos los servicios
-docker-compose up -d
+docker compose up -d
 
 # Ver logs
-docker-compose logs -f backend
+docker compose logs -f backend
 
 # Detener servicios
-docker-compose down
+docker compose down
 
 # Detener y eliminar volúmenes
-docker-compose down -v
+docker compose down -v
 
 # Reconstruir imágenes
-docker-compose build --no-cache
+docker compose build --no-cache
 
 # Ejecutar comandos en el contenedor
-docker-compose exec backend bash
+docker compose exec backend bash
 ```
 
 ## 🔍 Desarrollo Local (sin Docker)
@@ -380,6 +399,7 @@ uvicorn app.main:app --reload
 - Actualización automática del estado de factura al crear pagos
 - Cálculo de deudas considerando pagos parciales
 - Agregación de totales por colegio y estudiante
+- Cache inteligente con invalidación automática para optimizar consultas pesadas
 
 ## 🤝 Contribuciones
 
