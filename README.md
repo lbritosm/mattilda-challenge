@@ -35,29 +35,21 @@ Este proyecto implementa un sistema completo para la gestión de:
 - **Pydantic**: Validación de datos
 - **Docker & Docker Compose**: Contenedores
 
-## 📦 Instalación
+## 🚀 Inicio Rápido
 
 ### Requisitos Previos
 
 - Docker y Docker Compose instalados
 - Git (opcional)
 
-### Pasos de Instalación
+### 1. Levantar el Proyecto con Docker
 
-1. **Clonar el repositorio** (si aplica):
 ```bash
-git clone <repository-url>
-cd mattilda
-```
+# Clonar el repositorio (si aplica)
+git clone https://github.com/lbritosm/mattilda-challenge.git
+cd mattilda-challenge
 
-2. **Configurar variables de entorno** (opcional):
-```bash
-cp .env.example .env
-# Editar .env si es necesario
-```
-
-3. **Levantar los servicios con Docker Compose**:
-```bash
+# Levantar todos los servicios
 docker compose up -d
 ```
 
@@ -68,13 +60,57 @@ Esto levantará:
 
 **Nota importante**: Al iniciar la aplicación, se ejecutan automáticamente las migraciones de Alembic. Esto asegura que la base de datos esté siempre actualizada con el esquema más reciente.
 
-4. **Verificar que los servicios estén corriendo**:
+### 2. Verificar que los Servicios Estén Corriendo
+
 ```bash
 docker compose ps
 ```
 
-5. **Acceder a la documentación de la API**:
-Abre tu navegador en: http://localhost:8000/docs
+Todos los servicios deben mostrar estado "healthy" o "running".
+
+### 3. Cargar Datos de Ejemplo
+
+Para cargar datos de ejemplo en la base de datos (con personajes de Los Simpsons):
+
+```bash
+docker compose exec backend python scripts/load_sample_data.py
+```
+
+El script crea:
+- 2 colegios (Escuela Primaria de Springfield e Instituto Springfield)
+- 5 estudiantes (Bart, Lisa, Milhouse, Nelson y Martin)
+- 6 facturas de ejemplo
+- 3 pagos de ejemplo
+
+### 4. Acceder a la API
+
+- **Documentación Swagger**: http://localhost:8000/docs
+- **Health Check**: http://localhost:8000/health
+- **API Base**: http://localhost:8000/api/v1
+
+### 5. Importar Colección de Postman
+
+El proyecto incluye una colección completa de Postman con todos los endpoints listos para usar:
+
+1. Abre Postman
+2. Haz clic en **Import**
+3. Selecciona los archivos:
+   - `Mattilda_API.postman_collection.json`
+   - `Mattilda_API.postman_environment.json`
+4. Selecciona el entorno "Mattilda API - Local"
+
+Para más detalles, consulta [POSTMAN_README.md](POSTMAN_README.md)
+
+## 📦 Instalación Detallada
+
+### Configurar Variables de Entorno (Opcional)
+
+```bash
+cp .env.example .env
+# Editar .env si es necesario
+```
+
+Las variables de entorno disponibles están documentadas en la sección [Configuración](#-configuración).
 
 ## 🎯 Uso
 
@@ -368,84 +404,6 @@ pytest tests/test_schools.py
 
 **Total**: 18 pruebas de integración que cubren todos los endpoints y reglas de negocio.
 
-## 📊 Cargar Datos de Ejemplo
-
-Para cargar datos de ejemplo en la base de datos (con personajes de Los Simpsons), puedes usar el script `load_sample_data.py`.
-
-### Cargar Datos en Docker (Recomendado)
-
-```bash
-# Asegúrate de que los servicios estén corriendo
-docker compose up -d
-
-# Ejecutar el script dentro del contenedor
-docker compose exec backend python scripts/load_sample_data.py
-```
-
-**Nota**: El script se conecta automáticamente a la base de datos configurada en `DATABASE_URL` del contenedor.
-
-### Cargar Datos Localmente (sin Docker)
-
-Si prefieres ejecutar el script localmente:
-
-```bash
-# Asegúrate de tener PostgreSQL corriendo y configurar DATABASE_URL
-export DATABASE_URL="postgresql://mattilda:mattilda123@localhost:5432/mattilda_db"
-
-# Ejecutar el script
-python scripts/load_sample_data.py
-```
-
-### Datos Creados
-
-El script crea los siguientes datos de ejemplo:
-
-- **2 colegios**:
-  - Escuela Primaria de Springfield
-  - Instituto Springfield
-
-- **5 estudiantes** (personajes de Los Simpsons):
-  - Bart Simpson
-  - Lisa Simpson
-  - Milhouse Van Houten
-  - Nelson Muntz
-  - Martin Prince
-
-- **6 facturas de ejemplo** con descripciones temáticas (mensualidades, materiales, actividades)
-
-- **3 pagos de ejemplo** asociados a las facturas
-
-### Verificar Datos Cargados
-
-Puedes verificar que los datos se cargaron correctamente:
-
-```bash
-# Listar colegios
-curl "http://localhost:8000/api/v1/schools/"
-
-# Listar estudiantes
-curl "http://localhost:8000/api/v1/students/"
-
-# Listar facturas
-curl "http://localhost:8000/api/v1/invoices/"
-
-# Ver estado de cuenta de un estudiante (reemplaza con un UUID real)
-curl "http://localhost:8000/api/v1/students/{student_id}/statement"
-```
-
-**Nota**: Si necesitas limpiar los datos y empezar de nuevo, puedes eliminar el volumen de PostgreSQL:
-
-```bash
-# Detener servicios y eliminar volúmenes
-docker compose down -v
-
-# Volver a levantar los servicios (creará una base de datos limpia)
-docker compose up -d
-
-# Cargar datos de ejemplo nuevamente
-docker compose exec backend python scripts/load_sample_data.py
-```
-
 ## 📊 Modelo de Base de Datos
 
 El sistema utiliza un modelo relacional con 4 entidades principales:
@@ -711,19 +669,16 @@ Todos los endpoints que retornan listas soportan paginación y filtros opcionale
 - Incluye: total facturado, total pagado, total pendiente y listado de facturas paginado del estudiante
 - La respuesta incluye `total_invoices` para conocer el total de facturas disponibles
 
-## 🐳 Comandos Docker
+## 🐳 Comandos Docker Útiles
 
 ```bash
-# Levantar todos los servicios
-docker compose up -d
-
 # Ver logs
 docker compose logs -f backend
 
 # Detener servicios
 docker compose down
 
-# Detener y eliminar volúmenes
+# Detener y eliminar volúmenes (limpia la base de datos)
 docker compose down -v
 
 # Reconstruir imágenes
@@ -732,14 +687,23 @@ docker compose build --no-cache
 # Ejecutar comandos en el contenedor
 docker compose exec backend bash
 
-# Cargar datos de ejemplo
+# Verificar datos cargados
+curl "http://localhost:8000/api/v1/schools/"
+curl "http://localhost:8000/api/v1/students/"
+curl "http://localhost:8000/api/v1/invoices/"
+```
+
+**Nota**: Si necesitas limpiar los datos y empezar de nuevo:
+
+```bash
+# Detener servicios y eliminar volúmenes
+docker compose down -v
+
+# Volver a levantar los servicios (creará una base de datos limpia)
+docker compose up -d
+
+# Cargar datos de ejemplo nuevamente
 docker compose exec backend python scripts/load_sample_data.py
-
-# Ejecutar pruebas
-docker compose exec backend pytest -v
-
-# Ejecutar pruebas específicas
-docker compose exec backend pytest tests/test_schools.py -v
 ```
 
 ## 🔍 Desarrollo Local (sin Docker)
