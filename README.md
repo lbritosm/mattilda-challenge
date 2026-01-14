@@ -101,17 +101,6 @@ El proyecto incluye una colección completa de Postman con todos los endpoints l
 
 Para más detalles, consulta [POSTMAN_README.md](POSTMAN_README.md)
 
-## 📦 Instalación Detallada
-
-### Configurar Variables de Entorno (Opcional)
-
-```bash
-cp .env.example .env
-# Editar .env si es necesario
-```
-
-Las variables de entorno disponibles están documentadas en la sección [Configuración](#-configuración).
-
 ## 🎯 Uso
 
 ### Endpoints Principales
@@ -371,38 +360,6 @@ docker compose exec backend pytest --lf
 - La base de datos de pruebas (`mattilda_test_db`) se crea automáticamente si no existe
 - Cada test tiene su propia base de datos limpia (se recrea antes de cada test)
 - No necesitas configurar nada manualmente
-
-### Ejecutar Pruebas Localmente (sin Docker)
-
-Si prefieres ejecutar las pruebas localmente:
-
-```bash
-# Instalar dependencias de desarrollo
-pip install -r requirements.txt
-
-# Asegúrate de tener PostgreSQL corriendo y configurar DATABASE_URL
-export DATABASE_URL="postgresql://mattilda:mattilda123@localhost:5432/mattilda_test_db"
-
-# Ejecutar todas las pruebas
-pytest
-
-# Ejecutar con cobertura
-pytest --cov=app tests/
-
-# Ejecutar pruebas específicas
-pytest tests/test_schools.py
-```
-
-**Nota**: Si ejecutas las pruebas localmente, necesitas tener PostgreSQL corriendo y ajustar la configuración en `tests/conftest.py` si es necesario.
-
-### Estructura de Pruebas
-
-- `tests/test_schools.py` - Pruebas de CRUD de colegios (6 tests)
-- `tests/test_students.py` - Pruebas de CRUD de estudiantes y validación de deuda (5 tests)
-- `tests/test_invoices.py` - Pruebas de facturas, pagos y paginación (5 tests)
-- `tests/test_accounts.py` - Pruebas de estados de cuenta (2 tests)
-
-**Total**: 18 pruebas de integración que cubren todos los endpoints y reglas de negocio.
 
 ## 📊 Modelo de Base de Datos
 
@@ -704,45 +661,6 @@ docker compose up -d
 
 # Cargar datos de ejemplo nuevamente
 docker compose exec backend python scripts/load_sample_data.py
-```
-
-## 🔍 Desarrollo Local (sin Docker)
-
-Si prefieres desarrollar sin Docker:
-
-1. **Instalar PostgreSQL** y crear la base de datos:
-```bash
-createdb mattilda_db
-```
-
-2. **Crear entorno virtual**:
-```bash
-python -m venv venv
-source venv/bin/activate  # En Windows: venv\Scripts\activate
-```
-
-3. **Instalar dependencias**:
-```bash
-pip install -r requirements.txt
-```
-
-4. **Configurar variables de entorno**:
-```bash
-export DATABASE_URL="postgresql://user:password@localhost:5432/mattilda_db"
-```
-
-5. **Inicializar base de datos** (las migraciones se ejecutan automáticamente al iniciar la app):
-```bash
-# Opción 1: Ejecutar migraciones manualmente
-alembic upgrade head
-
-# Opción 2: Iniciar la app (ejecuta migraciones automáticamente)
-uvicorn app.main:app --reload
-```
-
-6. **Ejecutar servidor**:
-```bash
-uvicorn app.main:app --reload
 ```
 
 ## 📚 Documentación Adicional
