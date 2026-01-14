@@ -66,6 +66,8 @@ Esto levantará:
 - Redis en el puerto 6379
 - Backend FastAPI en el puerto 8000
 
+**Nota importante**: Al iniciar la aplicación, se ejecutan automáticamente las migraciones de Alembic. Esto asegura que la base de datos esté siempre actualizada con el esquema más reciente.
+
 4. **Verificar que los servicios estén corriendo**:
 ```bash
 docker compose ps
@@ -342,6 +344,85 @@ El script crea:
 - 6 facturas de ejemplo
 - 3 pagos de ejemplo
 
+## 📊 Modelo de Base de Datos
+
+El sistema utiliza un modelo relacional con 4 entidades principales:
+
+- **SCHOOLS** (Colegios): Información de instituciones educativas
+- **STUDENTS** (Estudiantes): Estudiantes asociados a colegios
+- **INVOICES** (Facturas): Facturas de estudiantes
+- **PAYMENTS** (Pagos): Pagos realizados sobre facturas
+
+### Relaciones
+- Un colegio puede tener muchos estudiantes (1:N)
+- Un estudiante puede tener muchas facturas (1:N)
+- Una factura puede tener muchos pagos (1:N)
+
+### Diagrama ER
+
+Ver el diagrama completo en: [docs/database_diagram.md](docs/database_diagram.md)
+
+```mermaid
+erDiagram
+    SCHOOLS {
+        uuid id PK
+        string name
+        string address
+        string phone
+        string email
+        boolean is_active
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    STUDENTS {
+        uuid id PK
+        string first_name
+        string last_name
+        string email
+        date date_of_birth
+        string student_code
+        uuid school_id FK
+        boolean is_active
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    INVOICES {
+        uuid id PK
+        string invoice_number
+        uuid school_id FK
+        uuid student_id FK
+        numeric total_amount
+        string description
+        date issue_date
+        date due_date
+        enum status
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    PAYMENTS {
+        uuid id PK
+        uuid invoice_id FK "nullable"
+        uuid school_id FK
+        uuid student_id FK
+        numeric amount
+        string payment_method
+        string payment_reference
+        string notes
+        timestamp payment_date
+        timestamp created_at
+    }
+    
+    SCHOOLS ||--o{ STUDENTS : "tiene"
+    SCHOOLS ||--o{ INVOICES : "tiene (denormalizado)"
+    SCHOOLS ||--o{ PAYMENTS : "tiene (denormalizado)"
+    STUDENTS ||--o{ INVOICES : "tiene"
+    STUDENTS ||--o{ PAYMENTS : "tiene (denormalizado)"
+    INVOICES ||--o{ PAYMENTS : "tiene"
+```
+
 ## 🏗️ Estructura del Proyecto
 
 ```
@@ -399,6 +480,35 @@ Puedes configurar las siguientes variables en el archivo `.env`:
 - `REDIS_URL`: URL de conexión a Redis (opcional, para cache)
 - `ENVIRONMENT`: Entorno (development, production)
 - `LOG_LEVEL`: Nivel de logging (INFO, DEBUG, etc.)
+
+### Migraciones de Base de Datos
+
+**Las migraciones se ejecutan automáticamente** cuando la aplicación se inicia. El sistema utiliza Alembic para gestionar las migraciones de la base de datos.
+
+- **Ejecución automática**: Al iniciar la aplicación (evento `startup`), se intentan ejecutar automáticamente todas las migraciones pendientes usando `alembic upgrade head`
+- **Fallback**: Si por alguna razón no se pueden ejecutar las migraciones de Alembic (por ejemplo, si Alembic no está disponible), el sistema usa `create_all()` como fallback (solo para desarrollo)
+- **Migraciones manuales**: Si necesitas ejecutar migraciones manualmente:
+  ```bash
+  # Dentro del contenedor
+  docker compose exec backend alembic upgrade head
+  
+  # O localmente (si tienes Alembic instalado)
+  alembic upgrade head
+  ```
+- **Crear nuevas migraciones**:
+  ```bash
+  # Dentro del contenedor
+  docker compose exec backend alembic revision --autogenerate -m "descripción de la migración"
+  
+  # O localmente
+  alembic revision --autogenerate -m "descripción de la migración"
+  ```
+
+**Nota**: Si el contenedor no tiene Alembic instalado correctamente, puedes instalarlo manualmente:
+```bash
+docker compose exec backend pip install alembic==1.12.1
+docker compose restart backend
+```
 
 ### Cache con Redis
 
@@ -547,9 +657,13 @@ pip install -r requirements.txt
 export DATABASE_URL="postgresql://user:password@localhost:5432/mattilda_db"
 ```
 
-5. **Inicializar base de datos**:
+5. **Inicializar base de datos** (las migraciones se ejecutan automáticamente al iniciar la app):
 ```bash
-python -c "from app.core.database import init_db; init_db()"
+# Opción 1: Ejecutar migraciones manualmente
+alembic upgrade head
+
+# Opción 2: Iniciar la app (ejecuta migraciones automáticamente)
+uvicorn app.main:app --reload
 ```
 
 6. **Ejecutar servidor**:

@@ -8,7 +8,7 @@ from pathlib import Path
 # Agregar el directorio raíz al path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from sqlalchemy.orm import Session
 from app.core.database import SessionLocal, init_db
 from app.models.school import School
@@ -78,7 +78,9 @@ def load_sample_data():
         print(f"✓ Creados {len(students)} estudiantes")
         
         # Crear facturas
-        due_date = datetime.now() + timedelta(days=30)
+        from datetime import date
+        due_date = date.today() + timedelta(days=30)
+        issue_date = date.today()
         invoices_data = [
             {"number": "INV-2024-001", "student": students[0], "amount": Decimal("1000.00"), "description": "Mensualidad Enero - Bart Simpson"},
             {"number": "INV-2024-002", "student": students[0], "amount": Decimal("1000.00"), "description": "Mensualidad Febrero - Bart Simpson"},
@@ -92,9 +94,11 @@ def load_sample_data():
         for data in invoices_data:
             invoice = Invoice(
                 invoice_number=data["number"],
+                school_id=data["student"].school_id,
                 student_id=data["student"].id,
-                amount=data["amount"],
+                total_amount=data["amount"],
                 description=data["description"],
+                issue_date=issue_date,
                 due_date=due_date,
                 status=InvoiceStatus.PENDING
             )
@@ -116,6 +120,8 @@ def load_sample_data():
         for data in payments_data:
             payment = Payment(
                 invoice_id=data["invoice"].id,
+                school_id=data["invoice"].school_id,
+                student_id=data["invoice"].student_id,
                 amount=data["amount"],
                 payment_method=data["method"],
                 payment_reference=data["reference"],
@@ -132,7 +138,7 @@ def load_sample_data():
             total_paid = sum(
                 p.amount for p in db.query(Payment).filter(Payment.invoice_id == invoice.id).all()
             )
-            if total_paid >= invoice.amount:
+            if total_paid >= invoice.total_amount:
                 invoice.status = InvoiceStatus.PAID
             elif total_paid > 0:
                 invoice.status = InvoiceStatus.PARTIAL

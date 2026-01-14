@@ -58,13 +58,15 @@ app.include_router(api_router, prefix="/api/v1")
 
 @app.on_event("startup")
 async def startup_event():
-    """Inicializa la base de datos al arrancar la aplicación"""
+    """Inicializa la base de datos al arrancar la aplicación.
+    Ejecuta automáticamente las migraciones de Alembic."""
     logger.info("Inicializando aplicación...")
     try:
         init_db()
         logger.info("Base de datos inicializada correctamente")
     except Exception as e:
         logger.error(f"Error al inicializar base de datos: {e}")
+        raise
 
 
 @app.get("/", tags=["root"])

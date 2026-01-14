@@ -7,7 +7,9 @@ from uuid import UUID
 
 class PaymentBase(BaseModel):
     """Schema base para Payment"""
-    invoice_id: UUID = Field(..., description="ID de la factura")
+    invoice_id: Optional[UUID] = Field(None, description="ID de la factura (opcional para pagos 'a cuenta')")
+    school_id: UUID = Field(..., description="ID del colegio")
+    student_id: UUID = Field(..., description="ID del estudiante")
     amount: Decimal = Field(..., gt=0, description="Monto del pago (debe ser mayor a 0)")
     payment_method: Optional[str] = Field(None, max_length=50, description="Método de pago")
     payment_reference: Optional[str] = Field(None, max_length=100, description="Referencia del pago")
@@ -24,6 +26,7 @@ class Payment(PaymentBase):
     """Schema para retornar un Payment"""
     id: UUID
     created_at: datetime
+    updated_at: Optional[datetime] = None
     
     class Config:
         from_attributes = True

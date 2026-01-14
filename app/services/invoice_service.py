@@ -75,17 +75,26 @@ class InvoiceService:
         if not student:
             raise ValueError(f"Student with id {invoice.student_id} does not exist")
         
-        # Validar que el número de factura sea único
+        # Validar que school_id coincida con student.school_id
+        if invoice.school_id != student.school_id:
+            raise ValueError(f"School ID {invoice.school_id} does not match student's school ID {student.school_id}")
+        
+        # Validar que el número de factura sea único por colegio
         existing = db.query(Invoice).filter(
+            Invoice.school_id == invoice.school_id,
             Invoice.invoice_number == invoice.invoice_number
         ).first()
         if existing:
-            raise ValueError(f"Invoice number {invoice.invoice_number} already exists")
+            raise ValueError(f"Invoice number {invoice.invoice_number} already exists for this school")
         
         db_invoice = Invoice(**invoice.model_dump())
         db.add(db_invoice)
         db.commit()
         db.refresh(db_invoice)
+        
+        # Actualizar estado de la factura basado en pagos
+        InvoiceService._update_invoice_status(db, db_invoice)
+        
         return db_invoice
     
     @staticmethod
@@ -99,20 +108,27 @@ class InvoiceService:
         if not db_invoice:
             return None
         
-        # Validar número de factura único si se está actualizando
+        # Validar número de factura único por colegio si se está actualizando
         if invoice_update.invoice_number is not None:
+            school_id = invoice_update.school_id if invoice_update.school_id else db_invoice.school_id
             existing = db.query(Invoice).filter(
+                Invoice.school_id == school_id,
                 Invoice.invoice_number == invoice_update.invoice_number,
                 Invoice.id != invoice_id
             ).first()
             if existing:
-                raise ValueError(f"Invoice number {invoice_update.invoice_number} already exists")
+                raise ValueError(f"Invoice number {invoice_update.invoice_number} already exists for this school")
         
-        # Validar estudiante si se está actualizando
+        # Validar estudiante y school_id si se está actualizando
         if invoice_update.student_id is not None:
             student = db.query(Student).filter(Student.id == invoice_update.student_id).first()
             if not student:
                 raise ValueError(f"Student with id {invoice_update.student_id} does not exist")
+            
+            # Si se actualiza school_id, validar que coincida con student.school_id
+            school_id = invoice_update.school_id if invoice_update.school_id else db_invoice.school_id
+            if school_id != student.school_id:
+                raise ValueError(f"School ID {school_id} does not match student's school ID {student.school_id}")
         
         update_data = invoice_update.model_dump(exclude_unset=True)
         for field, value in update_data.items():
@@ -140,27 +156,43 @@ class InvoiceService:
     @staticmethod
     def create_payment(db: Session, payment: PaymentCreate) -> Payment:
         """Crea un nuevo pago para una factura"""
-        # Validar que la factura existe
-        invoice = InvoiceService.get_invoice(db, payment.invoice_id)
-        if not invoice:
-            raise ValueError(f"Invoice with id {payment.invoice_id} does not exist")
-        
-        # Validar que el monto del pago no exceda el monto pendiente
-        total_paid = InvoiceService._get_total_paid(db, payment.invoice_id)
-        pending = invoice.amount - total_paid
-        
-        if payment.amount > pending:
-            raise ValueError(
-                f"Payment amount ({payment.amount}) exceeds pending amount ({pending})"
-            )
+        # Si hay invoice_id, validar que la factura existe y que los IDs coincidan
+        if payment.invoice_id:
+            invoice = InvoiceService.get_invoice(db, payment.invoice_id)
+            if not invoice:
+                raise ValueError(f"Invoice with id {payment.invoice_id} does not exist")
+            
+            # Validar que school_id y student_id coincidan con la factura
+            if payment.school_id != invoice.school_id:
+                raise ValueError(f"Payment school_id {payment.school_id} does not match invoice school_id {invoice.school_id}")
+            if payment.student_id != invoice.student_id:
+                raise ValueError(f"Payment student_id {payment.student_id} does not match invoice student_id {invoice.student_id}")
+            
+            # Validar que el monto del pago no exceda el monto pendiente
+            total_paid = InvoiceService._get_total_paid(db, payment.invoice_id)
+            pending = invoice.total_amount - total_paid
+            
+            if payment.amount > pending:
+                raise ValueError(
+                    f"Payment amount ({payment.amount}) exceeds pending amount ({pending})"
+                )
+        else:
+            # Para pagos "a cuenta", validar que student existe y pertenece al school
+            student = db.query(Student).filter(Student.id == payment.student_id).first()
+            if not student:
+                raise ValueError(f"Student with id {payment.student_id} does not exist")
+            if payment.school_id != student.school_id:
+                raise ValueError(f"Payment school_id {payment.school_id} does not match student's school_id {student.school_id}")
         
         db_payment = Payment(**payment.model_dump())
         db.add(db_payment)
         db.commit()
         db.refresh(db_payment)
         
-        # Actualizar estado de la factura
-        InvoiceService._update_invoice_status(db, invoice)
+        # Actualizar estado de la factura si hay invoice_id
+        if payment.invoice_id:
+            invoice = InvoiceService.get_invoice(db, payment.invoice_id)
+            InvoiceService._update_invoice_status(db, invoice)
         
         return db_payment
     
@@ -188,7 +220,7 @@ class InvoiceService:
     
     @staticmethod
     def _get_total_paid(db: Session, invoice_id: UUID) -> Decimal:
-        """Calcula el total pagado de una factura"""
+        """Calcula el total pagado de una factura (solo pagos asociados a la factura)"""
         result = db.query(func.sum(Payment.amount)).filter(
             Payment.invoice_id == invoice_id
         ).scalar()
@@ -199,7 +231,7 @@ class InvoiceService:
         """Actualiza el estado de una factura basado en los pagos"""
         total_paid = InvoiceService._get_total_paid(db, invoice.id)
         
-        if total_paid >= invoice.amount:
+        if total_paid >= invoice.total_amount:
             invoice.status = InvoiceStatus.PAID
         elif total_paid > 0:
             invoice.status = InvoiceStatus.PARTIAL
