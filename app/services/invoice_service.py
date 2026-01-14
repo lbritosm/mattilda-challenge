@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
 from typing import List, Optional
 from decimal import Decimal
@@ -15,8 +15,10 @@ class InvoiceService:
     
     @staticmethod
     def get_invoice(db: Session, invoice_id: UUID) -> Optional[Invoice]:
-        """Obtiene una factura por ID"""
-        return db.query(Invoice).filter(Invoice.id == invoice_id).first()
+        """Obtiene una factura por ID con sus pagos cargados"""
+        return db.query(Invoice).options(
+            joinedload(Invoice.payments)
+        ).filter(Invoice.id == invoice_id).first()
     
     @staticmethod
     def get_invoices(
@@ -27,8 +29,11 @@ class InvoiceService:
         school_id: Optional[UUID] = None,
         status: Optional[InvoiceStatus] = None
     ) -> List[Invoice]:
-        """Obtiene una lista de facturas con paginación y filtros, ordenadas por fecha de creación descendente"""
-        query = db.query(Invoice)
+        """Obtiene una lista de facturas con paginación y filtros, ordenadas por fecha de creación descendente.
+        Incluye los pagos asociados a cada factura."""
+        query = db.query(Invoice).options(
+            joinedload(Invoice.payments)
+        )
         
         if student_id is not None:
             query = query.filter(Invoice.student_id == student_id)

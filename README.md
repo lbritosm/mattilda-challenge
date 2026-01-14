@@ -460,6 +460,7 @@ uvicorn app.main:app --reload
 - **School**: Representa un colegio con información básica (ID: UUID)
 - **Student**: Estudiante asociado a un colegio (relación many-to-one, IDs: UUID)
 - **Invoice**: Factura asociada a un estudiante (relación many-to-one, IDs: UUID)
+  - Incluye lista de pagos asociados (`payments`)
 - **Payment**: Pago asociado a una factura (relación many-to-one, IDs: UUID)
 
 ### Identificadores (IDs)

@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
 from typing import List
 from decimal import Decimal
@@ -38,8 +38,10 @@ class AccountService:
         # Contar total de facturas
         total_invoices = invoices_query.count()
         
-        # Obtener facturas paginadas
-        invoices = invoices_query.order_by(Invoice.created_at.desc()).offset(skip).limit(limit).all()
+        # Obtener facturas paginadas con sus pagos
+        invoices = invoices_query.options(
+            joinedload(Invoice.payments)
+        ).order_by(Invoice.created_at.desc()).offset(skip).limit(limit).all()
         
         # Calcular totales (necesitamos todas las facturas para los totales)
         all_invoices = db.query(Invoice).join(Student).filter(
@@ -103,8 +105,10 @@ class AccountService:
         # Contar total de facturas
         total_invoices = invoices_query.count()
         
-        # Obtener facturas paginadas
-        invoices = invoices_query.order_by(Invoice.created_at.desc()).offset(skip).limit(limit).all()
+        # Obtener facturas paginadas con sus pagos
+        invoices = invoices_query.options(
+            joinedload(Invoice.payments)
+        ).order_by(Invoice.created_at.desc()).offset(skip).limit(limit).all()
         
         # Calcular totales (necesitamos todas las facturas para los totales)
         all_invoices = db.query(Invoice).filter(Invoice.student_id == student_id).all()

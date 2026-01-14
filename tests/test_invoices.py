@@ -35,6 +35,10 @@ def test_create_invoice(client, db):
     data = response.json()
     assert data["invoice_number"] == invoice_data["invoice_number"]
     assert float(data["amount"]) == 1000.00
+    # Verificar que la factura incluye la lista de pagos (inicialmente vacía)
+    assert "payments" in data
+    assert isinstance(data["payments"], list)
+    assert len(data["payments"]) == 0
 
 
 def test_create_payment(client, db):
@@ -76,6 +80,14 @@ def test_create_payment(client, db):
     assert response.status_code == 201
     data = response.json()
     assert float(data["amount"]) == 300.00
+    
+    # Verificar que al obtener la factura, incluye el pago
+    invoice_response = client.get(f"/api/v1/invoices/{invoice_id}")
+    assert invoice_response.status_code == 200
+    invoice_data = invoice_response.json()
+    assert "payments" in invoice_data
+    assert len(invoice_data["payments"]) == 1
+    assert float(invoice_data["payments"][0]["amount"]) == 300.00
 
 
 def test_account_status(client, db):

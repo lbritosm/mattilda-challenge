@@ -1,9 +1,10 @@
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 from decimal import Decimal
 from uuid import UUID
 from app.models.invoice import InvoiceStatus
+from app.schemas.payment import Payment
 
 
 class InvoiceBase(BaseModel):
@@ -36,6 +37,7 @@ class Invoice(InvoiceBase):
     id: UUID
     created_at: datetime
     updated_at: Optional[datetime] = None
+    payments: Optional[List[Payment]] = Field(default=[], description="Lista de pagos asociados a la factura")
     
     class Config:
         from_attributes = True
