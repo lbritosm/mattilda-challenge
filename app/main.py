@@ -36,8 +36,7 @@ app = FastAPI(
     * ¿Cuál es el estado de cuenta de un colegio o de un estudiante?
     """,
     version="1.0.0",
-    docs_url="/docs",
-    redoc_url="/redoc"
+    docs_url="/docs"
 )
 
 # Configurar CORS

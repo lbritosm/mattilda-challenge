@@ -140,7 +140,6 @@ Abre tu navegador en: http://localhost:8000/docs
 - `GET /health` - Health check
 - `GET /metrics` - Métricas básicas
 - `GET /docs` - Documentación Swagger
-- `GET /redoc` - Documentación ReDoc
 
 ### Ejemplos de Uso
 
@@ -785,7 +784,6 @@ uvicorn app.main:app --reload
 ## 📚 Documentación Adicional
 
 - **Swagger UI**: http://localhost:8000/docs
-- **ReDoc**: http://localhost:8000/redoc
 - **Health Check**: http://localhost:8000/health
 - **Métricas**: http://localhost:8000/metrics
 

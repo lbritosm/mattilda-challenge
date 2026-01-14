@@ -154,6 +154,5 @@ pm.test("Response has id", function () {
 ## 📚 Documentación Adicional
 
 - **Swagger UI**: http://localhost:8000/docs
-- **ReDoc**: http://localhost:8000/redoc
 - **README Principal**: Ver `README.md` en la raíz del proyecto
 
