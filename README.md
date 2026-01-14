@@ -838,10 +838,9 @@ Esta sección documenta las reglas de negocio implementadas y las decisiones té
 - Al intentar actualizar el `school_id` de un estudiante, el sistema calcula la deuda total:
   - Deuda = Total Facturado - Total Pagado
 - Si la deuda > 0, se rechaza la operación con error 400
-- Si la deuda = 0, se permite el cambio y se actualizan automáticamente:
-  - `school_id` en todas las facturas del estudiante
-  - `school_id` en todos los pagos del estudiante
-  - Se invalida el cache de statements de ambos colegios (anterior y nuevo)
+- Si la deuda = 0, se permite el cambio del `school_id` del estudiante
+- Al cambiar el `school_id`, se invalida el cache de statements de ambos colegios (anterior y nuevo) y del estudiante
+- **Nota**: Las facturas y pagos existentes mantienen su `school_id` original. Solo se actualiza el `school_id` del estudiante.
 
 **Endpoint afectado**: `PUT /api/v1/students/{student_id}`
 
