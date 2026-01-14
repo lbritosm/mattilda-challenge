@@ -80,28 +80,56 @@ Abre tu navegador en: http://localhost:8000/docs
 
 #### Schools
 - `POST /api/v1/schools/` - Crear colegio
-- `GET /api/v1/schools/` - Listar colegios (con paginación)
+- `GET /api/v1/schools/` - Listar colegios (con paginación y filtros)
+  - **Filtros opcionales:**
+    - `is_active` (bool): Filtrar por estado activo/inactivo
+  - **Parámetros de paginación:**
+    - `skip` (int, default: 0): Número de registros a saltar
+    - `limit` (int, default: 10, max: 100): Número de registros a retornar
 - `GET /api/v1/schools/{school_id}` - Obtener colegio por UUID
 - `PUT /api/v1/schools/{school_id}` - Actualizar colegio
 - `DELETE /api/v1/schools/{school_id}` - Eliminar colegio
 - `GET /api/v1/schools/{school_id}/students/count` - Contar estudiantes
 - `GET /api/v1/schools/{school_id}/statement` - Estado de cuenta del colegio (con cache y paginación)
+  - **Parámetros de paginación:**
+    - `skip` (int, default: 0): Número de facturas a saltar
+    - `limit` (int, default: 10, max: 100): Número de facturas a retornar
 
 #### Students
 - `POST /api/v1/students/` - Crear estudiante
 - `GET /api/v1/students/` - Listar estudiantes (con paginación y filtros)
+  - **Filtros opcionales:**
+    - `school_id` (UUID): Filtrar por ID de colegio
+    - `is_active` (bool): Filtrar por estado activo/inactivo
+  - **Parámetros de paginación:**
+    - `skip` (int, default: 0): Número de registros a saltar
+    - `limit` (int, default: 10, max: 100): Número de registros a retornar
 - `GET /api/v1/students/{student_id}` - Obtener estudiante por UUID
 - `PUT /api/v1/students/{student_id}` - Actualizar estudiante
 - `DELETE /api/v1/students/{student_id}` - Eliminar estudiante
 - `GET /api/v1/students/{student_id}/statement` - Estado de cuenta del estudiante (con cache y paginación)
+  - **Parámetros de paginación:**
+    - `skip` (int, default: 0): Número de facturas a saltar
+    - `limit` (int, default: 10, max: 100): Número de facturas a retornar
 
 #### Invoices
 - `POST /api/v1/invoices/` - Crear factura
 - `GET /api/v1/invoices/` - Listar facturas (con paginación y filtros)
+  - **Filtros opcionales:**
+    - `student_id` (UUID): Filtrar por ID de estudiante
+    - `school_id` (UUID): Filtrar por ID de colegio (facturas de estudiantes del colegio)
+    - `status` (string): Filtrar por estado de factura
+      - Valores posibles: `pending`, `paid`, `partial`, `cancelled`
+  - **Parámetros de paginación:**
+    - `skip` (int, default: 0): Número de registros a saltar
+    - `limit` (int, default: 10, max: 100): Número de registros a retornar
 - `GET /api/v1/invoices/{invoice_id}` - Obtener factura por UUID (incluye lista de pagos)
 - `PUT /api/v1/invoices/{invoice_id}` - Actualizar factura
 - `DELETE /api/v1/invoices/{invoice_id}` - Eliminar factura
 - `GET /api/v1/invoices/{invoice_id}/payments` - Listar pagos de una factura (con paginación)
+  - **Parámetros de paginación:**
+    - `skip` (int, default: 0): Número de pagos a saltar
+    - `limit` (int, default: 10, max: 100): Número de pagos a retornar
 - `POST /api/v1/invoices/{invoice_id}/payments` - Crear pago para una factura
 
 **Nota**: Todos los parámetros `{id}` en las rutas son UUIDs, no enteros.
@@ -128,7 +156,7 @@ curl -X POST "http://localhost:8000/api/v1/schools/" \
   }'
 ```
 
-#### Listar Colegios (con paginación)
+#### Listar Colegios (con paginación y filtros)
 ```bash
 # Primera página (10 colegios por defecto)
 curl "http://localhost:8000/api/v1/schools/"
@@ -138,6 +166,12 @@ curl "http://localhost:8000/api/v1/schools/?skip=10&limit=20"
 
 # Filtrar solo colegios activos
 curl "http://localhost:8000/api/v1/schools/?is_active=true"
+
+# Filtrar solo colegios inactivos
+curl "http://localhost:8000/api/v1/schools/?is_active=false"
+
+# Combinar filtros y paginación
+curl "http://localhost:8000/api/v1/schools/?is_active=true&skip=0&limit=50"
 ```
 
 #### Crear un Estudiante
@@ -155,6 +189,24 @@ curl -X POST "http://localhost:8000/api/v1/students/" \
 
 **Nota**: `school_id` debe ser un UUID válido. Obtén el UUID del colegio desde la respuesta al crearlo o listando los colegios.
 
+#### Listar Estudiantes (con paginación y filtros)
+```bash
+# Primera página (10 estudiantes por defecto)
+curl "http://localhost:8000/api/v1/students/"
+
+# Filtrar por colegio
+curl "http://localhost:8000/api/v1/students/?school_id=2c72f491-5084-4df9-be3a-dfa99bb16489"
+
+# Filtrar solo estudiantes activos
+curl "http://localhost:8000/api/v1/students/?is_active=true"
+
+# Combinar filtros: estudiantes activos de un colegio específico
+curl "http://localhost:8000/api/v1/students/?school_id=2c72f491-5084-4df9-be3a-dfa99bb16489&is_active=true"
+
+# Con paginación personalizada
+curl "http://localhost:8000/api/v1/students/?school_id=2c72f491-5084-4df9-be3a-dfa99bb16489&skip=0&limit=20"
+```
+
 #### Crear una Factura
 ```bash
 curl -X POST "http://localhost:8000/api/v1/invoices/" \
@@ -171,7 +223,7 @@ curl -X POST "http://localhost:8000/api/v1/invoices/" \
 
 **Nota**: `student_id` debe ser un UUID válido del estudiante.
 
-#### Listar Facturas (con paginación)
+#### Listar Facturas (con paginación y filtros)
 ```bash
 # Primera página (10 facturas por defecto)
 curl "http://localhost:8000/api/v1/invoices/"
@@ -179,8 +231,21 @@ curl "http://localhost:8000/api/v1/invoices/"
 # Filtrar por estudiante
 curl "http://localhost:8000/api/v1/invoices/?student_id=a1b2c3d4-e5f6-7890-abcd-ef1234567890"
 
-# Filtrar por estado y paginación
+# Filtrar por colegio (todas las facturas de estudiantes del colegio)
+curl "http://localhost:8000/api/v1/invoices/?school_id=2c72f491-5084-4df9-be3a-dfa99bb16489"
+
+# Filtrar por estado
+curl "http://localhost:8000/api/v1/invoices/?status=pending"
+# Estados disponibles: pending, paid, partial, cancelled
+
+# Combinar múltiples filtros
+curl "http://localhost:8000/api/v1/invoices/?school_id=2c72f491-5084-4df9-be3a-dfa99bb16489&status=pending"
+
+# Con paginación personalizada
 curl "http://localhost:8000/api/v1/invoices/?status=pending&skip=0&limit=20"
+
+# Ejemplo completo: facturas pendientes de un estudiante específico, segunda página
+curl "http://localhost:8000/api/v1/invoices/?student_id=a1b2c3d4-e5f6-7890-abcd-ef1234567890&status=pending&skip=10&limit=10"
 ```
 
 #### Registrar un Pago
@@ -353,11 +418,43 @@ El sistema utiliza Redis para cachear los endpoints de statements (estados de cu
 
 - **Degradación elegante**: Si Redis no está disponible, el sistema funciona normalmente sin cache
 
-### Paginación
+### Paginación y Filtros
 
-Todos los endpoints que retornan listas soportan paginación con los parámetros:
-- `skip`: Número de registros a saltar (default: 0)
-- `limit`: Número de registros a retornar (default: 10, max: 100)
+Todos los endpoints que retornan listas soportan paginación y filtros opcionales.
+
+#### Parámetros de Paginación (comunes a todos los endpoints de listado)
+- `skip` (int, default: 0): Número de registros a saltar
+- `limit` (int, default: 10, max: 100): Número de registros a retornar
+
+#### Filtros por Endpoint
+
+**Schools (`GET /api/v1/schools/`):**
+- `is_active` (bool, opcional): Filtrar por estado activo/inactivo
+  - `true`: Solo colegios activos
+  - `false`: Solo colegios inactivos
+  - Sin parámetro: Todos los colegios
+
+**Students (`GET /api/v1/students/`):**
+- `school_id` (UUID, opcional): Filtrar por ID de colegio
+- `is_active` (bool, opcional): Filtrar por estado activo/inactivo
+  - `true`: Solo estudiantes activos
+  - `false`: Solo estudiantes inactivos
+  - Sin parámetro: Todos los estudiantes
+- Los filtros se pueden combinar: `?school_id={uuid}&is_active=true`
+
+**Invoices (`GET /api/v1/invoices/`):**
+- `student_id` (UUID, opcional): Filtrar por ID de estudiante
+- `school_id` (UUID, opcional): Filtrar por ID de colegio (retorna facturas de todos los estudiantes del colegio)
+- `status` (string, opcional): Filtrar por estado de factura
+  - Valores válidos: `pending`, `paid`, `partial`, `cancelled`
+- Los filtros se pueden combinar: `?school_id={uuid}&status=pending`
+
+**Statements:**
+- `GET /api/v1/schools/{school_id}/statement`: Parámetros `skip` y `limit` para paginar facturas
+- `GET /api/v1/students/{student_id}/statement`: Parámetros `skip` y `limit` para paginar facturas
+
+**Payments:**
+- `GET /api/v1/invoices/{invoice_id}/payments`: Parámetros `skip` y `limit` para paginar pagos
 
 **Endpoints con paginación:**
 - Listados: `/api/v1/schools/`, `/api/v1/students/`, `/api/v1/invoices/`
@@ -377,8 +474,11 @@ Todos los endpoints que retornan listas soportan paginación con los parámetros
 
 **Características:**
 - Todos los listados están ordenados por fecha de creación descendente (más recientes primero)
+- Los pagos están ordenados por fecha de pago descendente (más recientes primero)
 - Los endpoints de statement calculan los totales (facturado, pagado, pendiente) usando **todas** las facturas, pero solo retornan la lista paginada de facturas
 - La paginación permite manejar grandes volúmenes de datos eficientemente
+- Los filtros se pueden combinar usando `&` en la URL
+- Todos los filtros son opcionales; si no se especifican, se retornan todos los registros
 
 ## 📝 Preguntas que Responde el Sistema
 
