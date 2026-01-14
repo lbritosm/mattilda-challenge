@@ -13,6 +13,7 @@ Este proyecto implementa un sistema completo para la gestión de:
 ## 🚀 Características
 
 - ✅ CRUD completo para Colegios, Estudiantes y Facturas
+- ✅ IDs con UUID para mayor seguridad (evita enumeración)
 - ✅ Sistema de pagos con actualización automática de estados
 - ✅ Cálculo de estados de cuenta (colegio y estudiante)
 - ✅ Cache con Redis para optimizar consultas pesadas (statements)
@@ -80,27 +81,29 @@ Abre tu navegador en: http://localhost:8000/docs
 #### Schools
 - `POST /api/v1/schools/` - Crear colegio
 - `GET /api/v1/schools/` - Listar colegios (con paginación)
-- `GET /api/v1/schools/{id}` - Obtener colegio por ID
-- `PUT /api/v1/schools/{id}` - Actualizar colegio
-- `DELETE /api/v1/schools/{id}` - Eliminar colegio
-- `GET /api/v1/schools/{id}/students/count` - Contar estudiantes
-- `GET /api/v1/schools/{id}/statement` - Estado de cuenta del colegio (con cache)
+- `GET /api/v1/schools/{school_id}` - Obtener colegio por UUID
+- `PUT /api/v1/schools/{school_id}` - Actualizar colegio
+- `DELETE /api/v1/schools/{school_id}` - Eliminar colegio
+- `GET /api/v1/schools/{school_id}/students/count` - Contar estudiantes
+- `GET /api/v1/schools/{school_id}/statement` - Estado de cuenta del colegio (con cache)
 
 #### Students
 - `POST /api/v1/students/` - Crear estudiante
 - `GET /api/v1/students/` - Listar estudiantes (con paginación y filtros)
-- `GET /api/v1/students/{id}` - Obtener estudiante por ID
-- `PUT /api/v1/students/{id}` - Actualizar estudiante
-- `DELETE /api/v1/students/{id}` - Eliminar estudiante
-- `GET /api/v1/students/{id}/statement` - Estado de cuenta del estudiante (con cache)
+- `GET /api/v1/students/{student_id}` - Obtener estudiante por UUID
+- `PUT /api/v1/students/{student_id}` - Actualizar estudiante
+- `DELETE /api/v1/students/{student_id}` - Eliminar estudiante
+- `GET /api/v1/students/{student_id}/statement` - Estado de cuenta del estudiante (con cache)
 
 #### Invoices
 - `POST /api/v1/invoices/` - Crear factura
 - `GET /api/v1/invoices/` - Listar facturas (con paginación y filtros)
-- `GET /api/v1/invoices/{id}` - Obtener factura por ID
-- `PUT /api/v1/invoices/{id}` - Actualizar factura
-- `DELETE /api/v1/invoices/{id}` - Eliminar factura
-- `POST /api/v1/invoices/{id}/payments` - Crear pago para una factura
+- `GET /api/v1/invoices/{invoice_id}` - Obtener factura por UUID
+- `PUT /api/v1/invoices/{invoice_id}` - Actualizar factura
+- `DELETE /api/v1/invoices/{invoice_id}` - Eliminar factura
+- `POST /api/v1/invoices/{invoice_id}/payments` - Crear pago para una factura
+
+**Nota**: Todos los parámetros `{id}` en las rutas son UUIDs, no enteros.
 
 
 #### Health & Metrics
@@ -132,10 +135,12 @@ curl -X POST "http://localhost:8000/api/v1/students/" \
     "first_name": "Juan",
     "last_name": "Pérez",
     "email": "juan.perez@email.com",
-    "school_id": 1,
+    "school_id": "2c72f491-5084-4df9-be3a-dfa99bb16489",
     "is_active": true
   }'
 ```
+
+**Nota**: `school_id` debe ser un UUID válido. Obtén el UUID del colegio desde la respuesta al crearlo o listando los colegios.
 
 #### Crear una Factura
 ```bash
@@ -143,7 +148,7 @@ curl -X POST "http://localhost:8000/api/v1/invoices/" \
   -H "Content-Type: application/json" \
   -d '{
     "invoice_number": "INV-2024-001",
-    "student_id": 1,
+    "student_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
     "amount": 1000.00,
     "description": "Mensualidad Enero 2024",
     "due_date": "2024-02-15T00:00:00",
@@ -151,12 +156,14 @@ curl -X POST "http://localhost:8000/api/v1/invoices/" \
   }'
 ```
 
+**Nota**: `student_id` debe ser un UUID válido del estudiante.
+
 #### Registrar un Pago
 ```bash
-curl -X POST "http://localhost:8000/api/v1/invoices/1/payments" \
+curl -X POST "http://localhost:8000/api/v1/invoices/a1b2c3d4-e5f6-7890-abcd-ef1234567890/payments" \
   -H "Content-Type: application/json" \
   -d '{
-    "invoice_id": 1,
+    "invoice_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
     "amount": 500.00,
     "payment_method": "transfer",
     "payment_reference": "TRF-001",
@@ -164,15 +171,19 @@ curl -X POST "http://localhost:8000/api/v1/invoices/1/payments" \
   }'
 ```
 
+**Nota**: Reemplaza `a1b2c3d4-e5f6-7890-abcd-ef1234567890` con el UUID real de la factura.
+
 #### Consultar Estado de Cuenta de un Estudiante
 ```bash
-curl "http://localhost:8000/api/v1/students/1/statement"
+curl "http://localhost:8000/api/v1/students/a1b2c3d4-e5f6-7890-abcd-ef1234567890/statement"
 ```
 
 #### Consultar Estado de Cuenta de un Colegio
 ```bash
-curl "http://localhost:8000/api/v1/schools/1/statement"
+curl "http://localhost:8000/api/v1/schools/2c72f491-5084-4df9-be3a-dfa99bb16489/statement"
 ```
+
+**Nota**: Reemplaza los UUIDs de ejemplo con los UUIDs reales obtenidos al crear los recursos.
 
 ## 🧪 Pruebas
 
@@ -282,8 +293,10 @@ Puedes configurar las siguientes variables en el archivo `.env`:
 El sistema utiliza Redis para cachear los endpoints de statements (estados de cuenta), que son consultas pesadas con agregaciones:
 
 - **Endpoints cacheados**:
-  - `GET /api/v1/students/{id}/statement`
-  - `GET /api/v1/schools/{id}/statement`
+  - `GET /api/v1/students/{student_id}/statement`
+  - `GET /api/v1/schools/{school_id}/statement`
+  
+  Los parámetros `{student_id}` y `{school_id}` deben ser UUIDs válidos.
 
 - **TTL (Time To Live)**: 60 segundos por defecto
 
@@ -303,13 +316,16 @@ Los endpoints de listado soportan paginación con los parámetros:
 
 ✅ **¿Cuántos alumnos tiene un colegio?**
 - Endpoint: `GET /api/v1/schools/{school_id}/students/count`
+- `school_id` debe ser un UUID válido
 
 ✅ **¿Cuál es el estado de cuenta de un colegio?**
 - Endpoint: `GET /api/v1/schools/{school_id}/statement`
+- `school_id` debe ser un UUID válido
 - Incluye: total facturado, total pagado, total pendiente, número de estudiantes y listado de facturas
 
 ✅ **¿Cuál es el estado de cuenta de un estudiante?**
 - Endpoint: `GET /api/v1/students/{student_id}/statement`
+- `student_id` debe ser un UUID válido
 - Incluye: total facturado, total pagado, total pendiente y listado de facturas del estudiante
 
 ## 🐳 Comandos Docker
@@ -379,10 +395,18 @@ uvicorn app.main:app --reload
 ## 🎨 Decisiones de Diseño
 
 ### Modelos de Datos
-- **School**: Representa un colegio con información básica
-- **Student**: Estudiante asociado a un colegio (relación many-to-one)
-- **Invoice**: Factura asociada a un estudiante (relación many-to-one)
-- **Payment**: Pago asociado a una factura (relación many-to-one)
+- **School**: Representa un colegio con información básica (ID: UUID)
+- **Student**: Estudiante asociado a un colegio (relación many-to-one, IDs: UUID)
+- **Invoice**: Factura asociada a un estudiante (relación many-to-one, IDs: UUID)
+- **Payment**: Pago asociado a una factura (relación many-to-one, IDs: UUID)
+
+### Identificadores (IDs)
+- Todos los IDs utilizan **UUID v4** en lugar de enteros secuenciales
+- **Ventajas**:
+  - Mayor seguridad: evita la enumeración de recursos
+  - Identificadores únicos globalmente
+  - No revelan información sobre la cantidad de registros
+- **Formato**: `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` (ej: `2c72f491-5084-4df9-be3a-dfa99bb16489`)
 
 ### Estados de Factura
 - `pending`: Factura pendiente de pago
