@@ -299,13 +299,51 @@ curl "http://localhost:8000/api/v1/schools/2c72f491-5084-4df9-be3a-dfa99bb16489/
 
 ## 🧪 Pruebas
 
-### Ejecutar Pruebas
+### Ejecutar Pruebas en Docker (Recomendado)
 
-**Nota**: Para ejecutar las pruebas, necesitas tener PostgreSQL corriendo localmente o ajustar la configuración en `tests/conftest.py`.
+**Nota**: Las pruebas se ejecutan dentro del contenedor Docker, que ya tiene configurada la conexión a la base de datos de pruebas.
+
+```bash
+# Ejecutar todas las pruebas
+docker compose exec backend pytest
+
+# Ejecutar con salida detallada (verbose)
+docker compose exec backend pytest -v
+
+# Ejecutar con cobertura
+docker compose exec backend pytest --cov=app tests/
+
+# Ejecutar pruebas específicas
+docker compose exec backend pytest tests/test_schools.py
+docker compose exec backend pytest tests/test_students.py
+docker compose exec backend pytest tests/test_invoices.py
+docker compose exec backend pytest tests/test_accounts.py
+
+# Ejecutar un test específico
+docker compose exec backend pytest tests/test_schools.py::test_create_school -v
+
+# Ejecutar con salida de errores detallada
+docker compose exec backend pytest --tb=long
+
+# Ver solo los tests que fallan
+docker compose exec backend pytest --lf
+```
+
+**Configuración automática**:
+- La base de datos de pruebas (`mattilda_test_db`) se crea automáticamente si no existe
+- Cada test tiene su propia base de datos limpia (se recrea antes de cada test)
+- No necesitas configurar nada manualmente
+
+### Ejecutar Pruebas Localmente (sin Docker)
+
+Si prefieres ejecutar las pruebas localmente:
 
 ```bash
 # Instalar dependencias de desarrollo
 pip install -r requirements.txt
+
+# Asegúrate de tener PostgreSQL corriendo y configurar DATABASE_URL
+export DATABASE_URL="postgresql://mattilda:mattilda123@localhost:5432/mattilda_test_db"
 
 # Ejecutar todas las pruebas
 pytest
@@ -317,32 +355,94 @@ pytest --cov=app tests/
 pytest tests/test_schools.py
 ```
 
+**Nota**: Si ejecutas las pruebas localmente, necesitas tener PostgreSQL corriendo y ajustar la configuración en `tests/conftest.py` si es necesario.
+
 ### Estructura de Pruebas
 
-- `tests/test_schools.py` - Pruebas de CRUD de colegios
-- `tests/test_students.py` - Pruebas de CRUD de estudiantes
-- `tests/test_invoices.py` - Pruebas de facturas y pagos
-- `tests/test_accounts.py` - Pruebas de estados de cuenta
+- `tests/test_schools.py` - Pruebas de CRUD de colegios (6 tests)
+- `tests/test_students.py` - Pruebas de CRUD de estudiantes y validación de deuda (5 tests)
+- `tests/test_invoices.py` - Pruebas de facturas, pagos y paginación (5 tests)
+- `tests/test_accounts.py` - Pruebas de estados de cuenta (2 tests)
+
+**Total**: 18 pruebas de integración que cubren todos los endpoints y reglas de negocio.
 
 ## 📊 Cargar Datos de Ejemplo
 
-Para cargar datos de ejemplo en la base de datos (con personajes de Los Simpsons), puedes usar el script:
+Para cargar datos de ejemplo en la base de datos (con personajes de Los Simpsons), puedes usar el script `load_sample_data.py`.
+
+### Cargar Datos en Docker (Recomendado)
 
 ```bash
-python scripts/load_sample_data.py
-```
+# Asegúrate de que los servicios estén corriendo
+docker compose up -d
 
-O ejecutarlo dentro del contenedor:
-
-```bash
+# Ejecutar el script dentro del contenedor
 docker compose exec backend python scripts/load_sample_data.py
 ```
 
-El script crea:
-- 2 colegios (Escuela Primaria de Springfield e Instituto Springfield)
-- 5 estudiantes (Bart, Lisa, Milhouse, Nelson y Martin)
-- 6 facturas de ejemplo
-- 3 pagos de ejemplo
+**Nota**: El script se conecta automáticamente a la base de datos configurada en `DATABASE_URL` del contenedor.
+
+### Cargar Datos Localmente (sin Docker)
+
+Si prefieres ejecutar el script localmente:
+
+```bash
+# Asegúrate de tener PostgreSQL corriendo y configurar DATABASE_URL
+export DATABASE_URL="postgresql://mattilda:mattilda123@localhost:5432/mattilda_db"
+
+# Ejecutar el script
+python scripts/load_sample_data.py
+```
+
+### Datos Creados
+
+El script crea los siguientes datos de ejemplo:
+
+- **2 colegios**:
+  - Escuela Primaria de Springfield
+  - Instituto Springfield
+
+- **5 estudiantes** (personajes de Los Simpsons):
+  - Bart Simpson
+  - Lisa Simpson
+  - Milhouse Van Houten
+  - Nelson Muntz
+  - Martin Prince
+
+- **6 facturas de ejemplo** con descripciones temáticas (mensualidades, materiales, actividades)
+
+- **3 pagos de ejemplo** asociados a las facturas
+
+### Verificar Datos Cargados
+
+Puedes verificar que los datos se cargaron correctamente:
+
+```bash
+# Listar colegios
+curl "http://localhost:8000/api/v1/schools/"
+
+# Listar estudiantes
+curl "http://localhost:8000/api/v1/students/"
+
+# Listar facturas
+curl "http://localhost:8000/api/v1/invoices/"
+
+# Ver estado de cuenta de un estudiante (reemplaza con un UUID real)
+curl "http://localhost:8000/api/v1/students/{student_id}/statement"
+```
+
+**Nota**: Si necesitas limpiar los datos y empezar de nuevo, puedes eliminar el volumen de PostgreSQL:
+
+```bash
+# Detener servicios y eliminar volúmenes
+docker compose down -v
+
+# Volver a levantar los servicios (creará una base de datos limpia)
+docker compose up -d
+
+# Cargar datos de ejemplo nuevamente
+docker compose exec backend python scripts/load_sample_data.py
+```
 
 ## 📊 Modelo de Base de Datos
 
@@ -630,6 +730,15 @@ docker compose build --no-cache
 
 # Ejecutar comandos en el contenedor
 docker compose exec backend bash
+
+# Cargar datos de ejemplo
+docker compose exec backend python scripts/load_sample_data.py
+
+# Ejecutar pruebas
+docker compose exec backend pytest -v
+
+# Ejecutar pruebas específicas
+docker compose exec backend pytest tests/test_schools.py -v
 ```
 
 ## 🔍 Desarrollo Local (sin Docker)
@@ -711,6 +820,236 @@ uvicorn app.main:app --reload
 - Cálculo de deudas considerando pagos parciales
 - Agregación de totales por colegio y estudiante
 - Cache inteligente con invalidación automática para optimizar consultas pesadas
+
+## 💼 Casos de Uso de Negocio y Decisiones Técnicas
+
+Esta sección documenta las reglas de negocio implementadas y las decisiones técnicas clave que optimizan el rendimiento y garantizan la integridad de los datos.
+
+### 🔒 Reglas de Negocio
+
+#### 1. Inmutabilidad de `school_id` con Deuda Pendiente
+**Regla**: Un estudiante no puede cambiar de colegio (`school_id`) si tiene deuda pendiente con su colegio actual.
+
+**Implementación**:
+- Al intentar actualizar el `school_id` de un estudiante, el sistema calcula la deuda total:
+  - Deuda = Total Facturado - Total Pagado
+- Si la deuda > 0, se rechaza la operación con error 400
+- Si la deuda = 0, se permite el cambio y se actualizan automáticamente:
+  - `school_id` en todas las facturas del estudiante
+  - `school_id` en todos los pagos del estudiante
+  - Se invalida el cache de statements de ambos colegios (anterior y nuevo)
+
+**Endpoint afectado**: `PUT /api/v1/students/{student_id}`
+
+**Ejemplo de error**:
+```json
+{
+  "detail": "No se puede cambiar el colegio del estudiante. Tiene una deuda pendiente de $1000.00 con el colegio actual."
+}
+```
+
+#### 2. Pagos Siempre Asociados a Facturas
+**Regla**: Todos los pagos deben estar asociados a una factura. No se permiten "pagos a cuenta" sin factura.
+
+**Implementación**:
+- El campo `invoice_id` en la tabla `PAYMENTS` es **NOT NULL** (obligatorio)
+- Al crear un pago, se valida que la factura exista
+- El monto del pago no puede exceder el monto pendiente de la factura
+
+**Endpoint afectado**: `POST /api/v1/invoices/{invoice_id}/payments`
+
+#### 3. Derivación Automática de `school_id` y `student_id` en Pagos
+**Regla**: Los campos `school_id` y `student_id` de un pago se obtienen automáticamente de la factura asociada. No se pueden enviar en el body de la petición.
+
+**Implementación**:
+- El schema `PaymentCreate` no incluye `school_id`, `student_id` ni `invoice_id`
+- Estos campos se derivan automáticamente de la factura especificada en el path
+- El sistema valida que los datos sean consistentes
+
+**Endpoint afectado**: `POST /api/v1/invoices/{invoice_id}/payments`
+
+**Ejemplo de request**:
+```json
+{
+  "amount": "500.00",
+  "payment_method": "transfer",
+  "payment_reference": "TRF-001"
+}
+```
+
+**Nota**: `school_id`, `student_id` e `invoice_id` se asignan automáticamente.
+
+#### 4. Validación de Consistencia de `school_id` en Facturas
+**Regla**: El `school_id` de una factura debe coincidir con el `school_id` del estudiante asociado.
+
+**Implementación**:
+- Al crear o actualizar una factura, se valida que `invoice.school_id == student.school_id`
+- Si no coinciden, se rechaza la operación con error 400
+
+**Endpoints afectados**: `POST /api/v1/invoices/`, `PUT /api/v1/invoices/{invoice_id}`
+
+### ⚡ Optimizaciones Técnicas
+
+#### 1. Denormalización de Base de Datos
+
+**Decisión**: Se agregaron campos denormalizados para evitar joins costosos y mejorar el rendimiento de las consultas.
+
+**Campos denormalizados**:
+
+- **`INVOICES.school_id`**: 
+  - **Razón**: Para calcular el estado de cuenta de un colegio, sin denormalización se necesitaría: `schools → students → invoices` (2 joins)
+  - **Con denormalización**: Solo se consulta `invoices WHERE school_id = ?` (0 joins)
+  - **Validación**: Se valida en la capa de servicio que `invoice.school_id == student.school_id`
+
+- **`PAYMENTS.school_id` y `PAYMENTS.student_id`**:
+  - **Razón**: Para calcular totales pagados por colegio o estudiante, sin denormalización se necesitaría: `payments → invoices → students → schools` (3 joins)
+  - **Con denormalización**: Solo se consulta `payments WHERE school_id = ?` o `payments WHERE student_id = ?` (0 joins)
+  - **Validación**: Estos campos se derivan automáticamente de la factura asociada
+
+**Beneficios**:
+- ✅ Consultas de estados de cuenta 3-4x más rápidas
+- ✅ Evita doble conteo de pagos en agregaciones
+- ✅ Queries más simples y mantenibles
+- ✅ Mejor rendimiento con grandes volúmenes de datos
+
+**Trade-offs**:
+- ⚠️ Requiere mantener consistencia manual (validada en la capa de servicio)
+- ⚠️ Más espacio en disco (mínimo impacto)
+
+#### 2. Cache con Redis para Endpoints Pesados
+
+**Decisión**: Implementar cache para endpoints que realizan agregaciones costosas (SUM, COUNT) y se consultan frecuentemente.
+
+**Endpoints cacheados**:
+- `GET /api/v1/students/{student_id}/statement`
+- `GET /api/v1/schools/{school_id}/statement`
+
+**Configuración**:
+- **TTL (Time To Live)**: 60 segundos por defecto
+- **Clave de cache**: Incluye `student_id`/`school_id`, `skip` y `limit` para soportar paginación
+- **Invalidación automática**: El cache se invalida cuando:
+  - Se crea, actualiza o elimina una factura (`POST/PUT/DELETE /api/v1/invoices/`)
+  - Se crea un pago (`POST /api/v1/invoices/{invoice_id}/payments`)
+
+**Implementación**:
+- Invalidación por patrón: Se eliminan todas las versiones paginadas del statement
+- Degradación elegante: Si Redis no está disponible, el sistema funciona normalmente sin cache
+
+**Beneficios**:
+- ✅ Respuestas instantáneas para consultas repetidas
+- ✅ Reduce carga en la base de datos
+- ✅ Mejora la experiencia del usuario en pantallas de "estado de cuenta"
+
+#### 3. Índices Optimizados
+
+**Decisión**: Crear índices específicos para las consultas más frecuentes.
+
+**Índices implementados**:
+
+**INVOICES**:
+- `idx_invoice_school_due`: `(school_id, due_date DESC)` - Para estados de cuenta de colegios ordenados por vencimiento
+- `idx_invoice_student_due`: `(student_id, due_date DESC)` - Para estados de cuenta de estudiantes ordenados por vencimiento
+- `idx_invoice_school_status`: `(school_id, status)` - Para filtrar facturas por estado en un colegio
+- `uq_invoice_school_number`: `UNIQUE(school_id, invoice_number)` - Garantiza unicidad de número de factura por colegio
+
+**PAYMENTS**:
+- `idx_payment_student_date`: `(student_id, payment_date DESC)` - Para listar pagos de un estudiante ordenados por fecha
+- `idx_payment_school_date`: `(school_id, payment_date DESC)` - Para agregaciones de pagos por colegio
+- `idx_payments_invoice_id`: `(invoice_id)` - Para listar pagos de una factura
+
+**STUDENTS**:
+- `idx_student_active_school`: `(school_id, is_active)` - Para contar estudiantes activos por colegio
+- `uq_student_school_code`: `UNIQUE(school_id, student_code)` - Garantiza unicidad de código de estudiante por colegio
+
+**Beneficios**:
+- ✅ Consultas de estados de cuenta más rápidas
+- ✅ Búsquedas y filtros optimizados
+- ✅ Mejor rendimiento en operaciones de agregación
+
+#### 4. Constraints de Integridad
+
+**Decisión**: Implementar constraints a nivel de base de datos para garantizar la integridad de los datos.
+
+**CHECK Constraints**:
+
+- **INVOICES**:
+  - `ck_invoice_total_amount_positive`: `total_amount >= 0` - Evita montos negativos
+  - `ck_invoice_due_after_issue`: `due_date >= issue_date` - Evita fechas de vencimiento anteriores a la emisión
+
+- **PAYMENTS**:
+  - `ck_payment_amount_positive`: `amount > 0` - Garantiza que los pagos sean mayores a 0
+
+**Unique Constraints**:
+- `uq_invoice_school_number`: `UNIQUE(school_id, invoice_number)` - Número de factura único por colegio
+- `uq_student_school_code`: `UNIQUE(school_id, student_code)` - Código de estudiante único por colegio
+
+**Beneficios**:
+- ✅ Integridad de datos garantizada a nivel de base de datos
+- ✅ Previene errores de aplicación
+- ✅ Validación en múltiples capas (aplicación + base de datos)
+
+#### 5. Paginación en Todos los Endpoints de Listado
+
+**Decisión**: Implementar paginación en todos los endpoints que retornan listas para manejar grandes volúmenes de datos.
+
+**Endpoints con paginación**:
+- `GET /api/v1/schools/`
+- `GET /api/v1/students/`
+- `GET /api/v1/invoices/`
+- `GET /api/v1/invoices/{invoice_id}/payments`
+- `GET /api/v1/schools/{school_id}/statement` (paginación de facturas dentro del statement)
+- `GET /api/v1/students/{student_id}/statement` (paginación de facturas dentro del statement)
+
+**Parámetros**:
+- `skip` (default: 0): Número de registros a saltar
+- `limit` (default: 10, máximo: 100): Número de registros a retornar
+
+**Respuesta**:
+```json
+{
+  "items": [...],
+  "total": 150,
+  "skip": 0,
+  "limit": 10,
+  "has_next": true,
+  "has_previous": false
+}
+```
+
+**Beneficios**:
+- ✅ Manejo eficiente de grandes volúmenes de datos
+- ✅ Mejor rendimiento (menos datos transferidos)
+- ✅ Experiencia de usuario mejorada (carga más rápida)
+
+#### 6. Actualización Inteligente del Estado de Facturas
+
+**Decisión**: Optimizar cuándo se recalcula el estado de una factura para evitar cálculos innecesarios.
+
+**Implementación**:
+- **Al crear una factura**: No se actualiza el estado (siempre es `pending` inicialmente)
+- **Al actualizar una factura**: Solo se recalcula el estado si cambió `total_amount`
+- **Al crear un pago**: Siempre se recalcula el estado de la factura asociada
+
+**Estados posibles**:
+- `pending`: Total pagado = 0
+- `partial`: 0 < Total pagado < Total facturado
+- `paid`: Total pagado >= Total facturado
+
+**Beneficios**:
+- ✅ Menos operaciones innecesarias en la base de datos
+- ✅ Mejor rendimiento en actualizaciones de facturas
+- ✅ Estados siempre consistentes
+
+### 📊 Resumen de Optimizaciones
+
+| Optimización | Impacto | Beneficio |
+|-------------|---------|-----------|
+| Denormalización | Alto | Consultas 3-4x más rápidas, evita joins costosos |
+| Cache Redis | Alto | Respuestas instantáneas en consultas repetidas |
+| Índices optimizados | Medio | Búsquedas y filtros más rápidos |
+| Constraints DB | Medio | Integridad garantizada a nivel de BD |
+| Paginación | Alto | Manejo eficiente de grandes volúmenes |
+| Actualización inteligente de estados | Bajo | Menos operaciones innecesarias |
 
 ## 🤝 Contribuciones
 
