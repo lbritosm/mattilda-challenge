@@ -93,26 +93,6 @@
 					}
 				},
 				{
-					"name": "Count Schools",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/v1/schools/count?is_active=true",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "schools", "count"],
-							"query": [
-								{
-									"key": "is_active",
-									"value": "true",
-									"description": "Filtrar por estado activo (opcional)"
-								}
-							]
-						},
-						"description": "Cuenta el total de colegios"
-					}
-				},
-				{
 					"name": "Get School by ID",
 					"request": {
 						"method": "GET",
@@ -158,19 +138,6 @@
 							"path": ["api", "v1", "schools", "{{school_id}}"]
 						},
 						"description": "Elimina un colegio"
-					}
-				},
-				{
-					"name": "Count School Students",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/v1/schools/{{school_id}}/students/count",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "schools", "{{school_id}}", "students", "count"]
-						},
-						"description": "Cuenta el número de estudiantes activos de un colegio"
 					}
 				},
 				{
@@ -258,31 +225,6 @@
 							]
 						},
 						"description": "Lista estudiantes con paginación y filtros"
-					}
-				},
-				{
-					"name": "Count Students",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/v1/students/count?school_id={{school_id}}&is_active=true",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "students", "count"],
-							"query": [
-								{
-									"key": "school_id",
-									"value": "{{school_id}}",
-									"description": "Filtrar por ID de colegio (opcional)"
-								},
-								{
-									"key": "is_active",
-									"value": "true",
-									"description": "Filtrar por estado activo (opcional)"
-								}
-							]
-						},
-						"description": "Cuenta el total de estudiantes"
 					}
 				},
 				{
@@ -423,36 +365,6 @@
 							]
 						},
 						"description": "Lista facturas con paginación y filtros"
-					}
-				},
-				{
-					"name": "Count Invoices",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/v1/invoices/count?student_id={{student_id}}&school_id={{school_id}}&status=pending",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "invoices", "count"],
-							"query": [
-								{
-									"key": "student_id",
-									"value": "{{student_id}}",
-									"description": "Filtrar por ID de estudiante (opcional)"
-								},
-								{
-									"key": "school_id",
-									"value": "{{school_id}}",
-									"description": "Filtrar por ID de colegio (opcional)"
-								},
-								{
-									"key": "status",
-									"value": "pending",
-									"description": "Filtrar por estado (opcional)"
-								}
-							]
-						},
-						"description": "Cuenta el total de facturas"
 					}
 				},
 				{

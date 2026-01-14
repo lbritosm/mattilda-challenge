@@ -51,18 +51,6 @@ def get_schools(
     return PaginatedResponse.create(items=items, total=total, skip=skip, limit=limit)
 
 
-@router.get("/count", response_model=dict)
-def count_schools(
-    is_active: Optional[bool] = Query(None, description="Filtrar por estado activo"),
-    db: Session = Depends(get_db)
-):
-    """
-    Cuenta el total de colegios.
-    """
-    count = SchoolService.count_schools(db, is_active=is_active)
-    return {"total": count}
-
-
 @router.get("/{school_id}", response_model=School)
 def get_school(
     school_id: UUID,
@@ -104,22 +92,6 @@ def delete_school(
     if not success:
         raise HTTPException(status_code=404, detail="School not found")
     return None
-
-
-@router.get("/{school_id}/students/count", response_model=dict)
-def count_school_students(
-    school_id: UUID,
-    db: Session = Depends(get_db)
-):
-    """
-    Cuenta el número de estudiantes activos de un colegio.
-    """
-    school = SchoolService.get_school(db, school_id)
-    if not school:
-        raise HTTPException(status_code=404, detail="School not found")
-    
-    count = SchoolService.count_students(db, school_id)
-    return {"school_id": str(school_id), "total_students": count}
 
 
 @router.get("/{school_id}/statement", response_model=SchoolAccountStatus)

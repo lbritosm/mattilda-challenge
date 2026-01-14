@@ -31,7 +31,7 @@ Este proyecto implementa un sistema completo para la gestión de:
 - **FastAPI**: Framework web moderno y rápido
 - **SQLAlchemy 2.0**: ORM para PostgreSQL
 - **PostgreSQL 15**: Base de datos relacional
-- **Redis**: Cache (opcional)
+- **Redis**: Cache
 - **Pydantic**: Validación de datos
 - **Docker & Docker Compose**: Contenedores
 
@@ -91,7 +91,6 @@ Abre tu navegador en: http://localhost:8000/docs
 - `GET /api/v1/schools/{school_id}` - Obtener colegio por UUID
 - `PUT /api/v1/schools/{school_id}` - Actualizar colegio
 - `DELETE /api/v1/schools/{school_id}` - Eliminar colegio
-- `GET /api/v1/schools/{school_id}/students/count` - Contar estudiantes
 - `GET /api/v1/schools/{school_id}/statement` - Estado de cuenta del colegio (con cache y paginación)
   - **Parámetros de paginación:**
     - `skip` (int, default: 0): Número de facturas a saltar
@@ -464,8 +463,6 @@ El sistema utiliza un modelo relacional con 4 entidades principales:
 
 ### Diagrama ER
 
-Ver el diagrama completo en: [docs/database_diagram.md](docs/database_diagram.md)
-
 ```mermaid
 erDiagram
     SCHOOLS {
@@ -697,7 +694,8 @@ Todos los endpoints que retornan listas soportan paginación y filtros opcionale
 ## 📝 Preguntas que Responde el Sistema
 
 ✅ **¿Cuántos alumnos tiene un colegio?**
-- Endpoint: `GET /api/v1/schools/{school_id}/students/count`
+- Endpoint: `GET /api/v1/schools/{school_id}/statement`
+- El campo `total_students` en la respuesta indica el número de estudiantes activos del colegio
 - `school_id` debe ser un UUID válido
 
 ✅ **¿Cuál es el estado de cuenta de un colegio?**

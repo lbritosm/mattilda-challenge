@@ -60,19 +60,6 @@ def get_students(
     return PaginatedResponse.create(items=items, total=total, skip=skip, limit=limit)
 
 
-@router.get("/count", response_model=dict)
-def count_students(
-    school_id: Optional[UUID] = Query(None, description="Filtrar por ID de colegio"),
-    is_active: Optional[bool] = Query(None, description="Filtrar por estado activo"),
-    db: Session = Depends(get_db)
-):
-    """
-    Cuenta el total de estudiantes.
-    """
-    count = StudentService.count_students(db, school_id=school_id, is_active=is_active)
-    return {"total": count}
-
-
 @router.get("/{student_id}", response_model=Student)
 def get_student(
     student_id: UUID,

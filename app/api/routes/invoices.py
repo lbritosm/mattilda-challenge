@@ -70,25 +70,6 @@ def get_invoices(
     return PaginatedResponse.create(items=items, total=total, skip=skip, limit=limit)
 
 
-@router.get("/count", response_model=dict)
-def count_invoices(
-    student_id: Optional[UUID] = Query(None, description="Filtrar por ID de estudiante"),
-    school_id: Optional[UUID] = Query(None, description="Filtrar por ID de colegio"),
-    status: Optional[InvoiceStatus] = Query(None, description="Filtrar por estado"),
-    db: Session = Depends(get_db)
-):
-    """
-    Cuenta el total de facturas.
-    """
-    count = InvoiceService.count_invoices(
-        db,
-        student_id=student_id,
-        school_id=school_id,
-        status=status
-    )
-    return {"total": count}
-
-
 @router.get("/{invoice_id}", response_model=Invoice)
 def get_invoice(
     invoice_id: UUID,
