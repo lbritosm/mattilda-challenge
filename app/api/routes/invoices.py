@@ -181,32 +181,16 @@ def create_payment(
     """
     Crea un nuevo pago para una factura.
     
-    El invoice_id del path se usa automáticamente. Los campos school_id y student_id
-    se obtienen de la factura si no se proporcionan en el body.
+    El invoice_id se obtiene del path. Los campos school_id y student_id
+    se obtienen automáticamente de la factura. No deben ser proporcionados en el body.
     """
-    # Si hay invoice_id en el body, debe coincidir con el path
-    if payment.invoice_id is not None and payment.invoice_id != invoice_id:
-        raise HTTPException(
-            status_code=400,
-            detail="Invoice ID in path does not match invoice_id in body"
-        )
-    
     # Obtener la factura para extraer school_id y student_id
     invoice = InvoiceService.get_invoice(db, invoice_id)
     if not invoice:
         raise HTTPException(status_code=404, detail="Invoice not found")
     
-    # Crear un nuevo objeto PaymentCreate con los valores correctos
-    payment_data = payment.model_dump()
-    payment_data['invoice_id'] = invoice_id
-    payment_data['school_id'] = payment_data.get('school_id') or invoice.school_id
-    payment_data['student_id'] = payment_data.get('student_id') or invoice.student_id
-    
-    from app.schemas.payment import PaymentCreate
-    payment_with_ids = PaymentCreate(**payment_data)
-    
     try:
-        result = InvoiceService.create_payment(db, payment_with_ids)
+        result = InvoiceService.create_payment(db, invoice_id, payment, invoice)
         # Invalidar cache de statements relacionados
         invalidate_statements_for_payment(result.id, db)
         return result

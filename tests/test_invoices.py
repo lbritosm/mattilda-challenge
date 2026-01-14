@@ -1,5 +1,5 @@
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from decimal import Decimal
 
 
@@ -20,12 +20,15 @@ def test_create_invoice(client, db):
     student_id = student_response.json()["id"]
     
     # Crear factura
-    due_date = (datetime.now() + timedelta(days=30)).isoformat()
+    due_date = (date.today() + timedelta(days=30)).isoformat()
+    issue_date = date.today().isoformat()
     invoice_data = {
         "invoice_number": "INV-001",
+        "school_id": school_id,
         "student_id": student_id,
-        "amount": "1000.00",
+        "total_amount": "1000.00",
         "description": "Mensualidad",
+        "issue_date": issue_date,
         "due_date": due_date,
         "status": "pending"
     }
@@ -34,7 +37,8 @@ def test_create_invoice(client, db):
     assert response.status_code == 201
     data = response.json()
     assert data["invoice_number"] == invoice_data["invoice_number"]
-    assert float(data["amount"]) == 1000.00
+    assert float(data["total_amount"]) == 1000.00
+    assert data["school_id"] == school_id
     # Verificar que la factura incluye la lista de pagos (inicialmente vacía)
     assert "payments" in data
     assert isinstance(data["payments"], list)
@@ -57,20 +61,22 @@ def test_create_payment(client, db):
     student_response = client.post("/api/v1/students/", json=student_data)
     student_id = student_response.json()["id"]
     
-    due_date = (datetime.now() + timedelta(days=30)).isoformat()
+    due_date = (date.today() + timedelta(days=30)).isoformat()
+    issue_date = date.today().isoformat()
     invoice_data = {
         "invoice_number": "INV-002",
+        "school_id": school_id,
         "student_id": student_id,
-        "amount": "500.00",
+        "total_amount": "500.00",
+        "issue_date": issue_date,
         "due_date": due_date,
         "status": "pending"
     }
     invoice_response = client.post("/api/v1/invoices/", json=invoice_data)
     invoice_id = invoice_response.json()["id"]
     
-    # Crear pago
+    # Crear pago (sin invoice_id, student_id, school_id - se obtienen del path y factura)
     payment_data = {
-        "invoice_id": invoice_id,
         "amount": "300.00",
         "payment_method": "cash",
         "payment_reference": "REF-001"
@@ -122,12 +128,15 @@ def test_account_status(client, db):
     student_id = student_response.json()["id"]
     
     # Crear facturas
-    due_date = (datetime.now() + timedelta(days=30)).isoformat()
+    due_date = (date.today() + timedelta(days=30)).isoformat()
+    issue_date = date.today().isoformat()
     for i in range(2):
         invoice_data = {
             "invoice_number": f"INV-{i+10}",
+            "school_id": school_id,
             "student_id": student_id,
-            "amount": "1000.00",
+            "total_amount": "1000.00",
+            "issue_date": issue_date,
             "due_date": due_date,
             "status": "pending"
         }
@@ -162,21 +171,23 @@ def test_get_invoice_payments(client, db):
     student_id = student_response.json()["id"]
     
     # Crear factura
-    due_date = (datetime.now() + timedelta(days=30)).isoformat()
+    due_date = (date.today() + timedelta(days=30)).isoformat()
+    issue_date = date.today().isoformat()
     invoice_data = {
         "invoice_number": "INV-PAYMENTS-001",
+        "school_id": school_id,
         "student_id": student_id,
-        "amount": "1000.00",
+        "total_amount": "1000.00",
+        "issue_date": issue_date,
         "due_date": due_date,
         "status": "pending"
     }
     invoice_response = client.post("/api/v1/invoices/", json=invoice_data)
     invoice_id = invoice_response.json()["id"]
     
-    # Crear múltiples pagos
+    # Crear múltiples pagos (sin invoice_id, student_id, school_id)
     for i in range(3):
         payment_data = {
-            "invoice_id": invoice_id,
             "amount": "100.00",
             "payment_method": "cash",
             "payment_reference": f"REF-{i}"
@@ -226,12 +237,15 @@ def test_get_invoices_pagination(client, db):
     student_id = student_response.json()["id"]
     
     # Crear múltiples facturas
-    due_date = (datetime.now() + timedelta(days=30)).isoformat()
+    due_date = (date.today() + timedelta(days=30)).isoformat()
+    issue_date = date.today().isoformat()
     for i in range(5):
         invoice_data = {
             "invoice_number": f"INV-PAG-{i}",
+            "school_id": school_id,
             "student_id": student_id,
-            "amount": "100.00",
+            "total_amount": "100.00",
+            "issue_date": issue_date,
             "due_date": due_date,
             "status": "pending"
         }

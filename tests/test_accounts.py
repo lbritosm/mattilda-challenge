@@ -1,5 +1,5 @@
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 
 
 def test_school_account_status(client, db):
@@ -22,12 +22,15 @@ def test_school_account_status(client, db):
         student_ids.append(student_response.json()["id"])
     
     # Crear facturas para cada estudiante
-    due_date = (datetime.now() + timedelta(days=30)).isoformat()
+    due_date = (date.today() + timedelta(days=30)).isoformat()
+    issue_date = date.today().isoformat()
     for i, student_id in enumerate(student_ids):
         invoice_data = {
             "invoice_number": f"INV-SCHOOL-{i}",
+            "school_id": school_id,
             "student_id": student_id,
-            "amount": "500.00",
+            "total_amount": "500.00",
+            "issue_date": issue_date,
             "due_date": due_date,
             "status": "pending"
         }
@@ -65,11 +68,14 @@ def test_student_account_status(client, db):
     student_id = student_response.json()["id"]
     
     # Crear factura
-    due_date = (datetime.now() + timedelta(days=30)).isoformat()
+    due_date = (date.today() + timedelta(days=30)).isoformat()
+    issue_date = date.today().isoformat()
     invoice_data = {
         "invoice_number": "INV-DEBT-001",
+        "school_id": school_id,
         "student_id": student_id,
-        "amount": "1000.00",
+        "total_amount": "1000.00",
+        "issue_date": issue_date,
         "due_date": due_date,
         "status": "pending"
     }

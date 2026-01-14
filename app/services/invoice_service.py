@@ -92,9 +92,6 @@ class InvoiceService:
         db.commit()
         db.refresh(db_invoice)
         
-        # Actualizar estado de la factura basado en pagos
-        InvoiceService._update_invoice_status(db, db_invoice)
-        
         return db_invoice
     
     @staticmethod
@@ -131,14 +128,20 @@ class InvoiceService:
                 raise ValueError(f"School ID {school_id} does not match student's school ID {student.school_id}")
         
         update_data = invoice_update.model_dump(exclude_unset=True)
+        
+        # Verificar si se actualiza total_amount (esto puede cambiar el estado)
+        total_amount_changed = 'total_amount' in update_data
+        
         for field, value in update_data.items():
             setattr(db_invoice, field, value)
         
         db.commit()
         db.refresh(db_invoice)
         
-        # Actualizar estado de la factura basado en pagos
-        InvoiceService._update_invoice_status(db, db_invoice)
+        # Solo actualizar el estado si cambió total_amount
+        # (los pagos no cambian al actualizar otros campos de la factura)
+        if total_amount_changed:
+            InvoiceService._update_invoice_status(db, db_invoice)
         
         return db_invoice
     
@@ -154,45 +157,34 @@ class InvoiceService:
         return True
     
     @staticmethod
-    def create_payment(db: Session, payment: PaymentCreate) -> Payment:
-        """Crea un nuevo pago para una factura"""
-        # Si hay invoice_id, validar que la factura existe y que los IDs coincidan
-        if payment.invoice_id:
-            invoice = InvoiceService.get_invoice(db, payment.invoice_id)
-            if not invoice:
-                raise ValueError(f"Invoice with id {payment.invoice_id} does not exist")
-            
-            # Validar que school_id y student_id coincidan con la factura
-            if payment.school_id != invoice.school_id:
-                raise ValueError(f"Payment school_id {payment.school_id} does not match invoice school_id {invoice.school_id}")
-            if payment.student_id != invoice.student_id:
-                raise ValueError(f"Payment student_id {payment.student_id} does not match invoice student_id {invoice.student_id}")
-            
-            # Validar que el monto del pago no exceda el monto pendiente
-            total_paid = InvoiceService._get_total_paid(db, payment.invoice_id)
-            pending = invoice.total_amount - total_paid
-            
-            if payment.amount > pending:
-                raise ValueError(
-                    f"Payment amount ({payment.amount}) exceeds pending amount ({pending})"
-                )
-        else:
-            # Para pagos "a cuenta", validar que student existe y pertenece al school
-            student = db.query(Student).filter(Student.id == payment.student_id).first()
-            if not student:
-                raise ValueError(f"Student with id {payment.student_id} does not exist")
-            if payment.school_id != student.school_id:
-                raise ValueError(f"Payment school_id {payment.school_id} does not match student's school_id {student.school_id}")
+    def create_payment(db: Session, invoice_id: UUID, payment: PaymentCreate, invoice: Invoice) -> Payment:
+        """
+        Crea un nuevo pago para una factura.
         
-        db_payment = Payment(**payment.model_dump())
+        Los campos invoice_id, school_id y student_id se obtienen automáticamente de la factura.
+        """
+        # Validar que el monto del pago no exceda el monto pendiente
+        total_paid = InvoiceService._get_total_paid(db, invoice_id)
+        pending = invoice.total_amount - total_paid
+        
+        if payment.amount > pending:
+            raise ValueError(
+                f"Payment amount ({payment.amount}) exceeds pending amount ({pending})"
+            )
+        
+        # Crear el pago con invoice_id, school_id y student_id de la factura
+        payment_data = payment.model_dump()
+        payment_data['invoice_id'] = invoice_id
+        payment_data['school_id'] = invoice.school_id
+        payment_data['student_id'] = invoice.student_id
+        
+        db_payment = Payment(**payment_data)
         db.add(db_payment)
         db.commit()
         db.refresh(db_payment)
         
-        # Actualizar estado de la factura si hay invoice_id
-        if payment.invoice_id:
-            invoice = InvoiceService.get_invoice(db, payment.invoice_id)
-            InvoiceService._update_invoice_status(db, invoice)
+        # Actualizar estado de la factura
+        InvoiceService._update_invoice_status(db, invoice)
         
         return db_payment
     

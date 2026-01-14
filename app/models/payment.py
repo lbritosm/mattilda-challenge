@@ -17,7 +17,7 @@ class Payment(Base):
     )
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    invoice_id = Column(UUID(as_uuid=True), ForeignKey("invoices.id"), nullable=True, index=True)  # Nullable para pagos "a cuenta"
+    invoice_id = Column(UUID(as_uuid=True), ForeignKey("invoices.id"), nullable=False, index=True)
     school_id = Column(UUID(as_uuid=True), ForeignKey("schools.id"), nullable=False, index=True)
     student_id = Column(UUID(as_uuid=True), ForeignKey("students.id"), nullable=False, index=True)
     amount = Column(Numeric(12, 2), nullable=False)  # Aumentado a 12,2

@@ -404,7 +404,7 @@ erDiagram
     
     PAYMENTS {
         uuid id PK
-        uuid invoice_id FK "nullable"
+        uuid invoice_id FK
         uuid school_id FK
         uuid student_id FK
         numeric amount
