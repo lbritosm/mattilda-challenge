@@ -98,9 +98,10 @@ Abre tu navegador en: http://localhost:8000/docs
 #### Invoices
 - `POST /api/v1/invoices/` - Crear factura
 - `GET /api/v1/invoices/` - Listar facturas (con paginación y filtros)
-- `GET /api/v1/invoices/{invoice_id}` - Obtener factura por UUID
+- `GET /api/v1/invoices/{invoice_id}` - Obtener factura por UUID (incluye lista de pagos)
 - `PUT /api/v1/invoices/{invoice_id}` - Actualizar factura
 - `DELETE /api/v1/invoices/{invoice_id}` - Eliminar factura
+- `GET /api/v1/invoices/{invoice_id}/payments` - Listar pagos de una factura (con paginación)
 - `POST /api/v1/invoices/{invoice_id}/payments` - Crear pago para una factura
 
 **Nota**: Todos los parámetros `{id}` en las rutas son UUIDs, no enteros.
@@ -193,6 +194,15 @@ curl -X POST "http://localhost:8000/api/v1/invoices/a1b2c3d4-e5f6-7890-abcd-ef12
     "payment_reference": "TRF-001",
     "notes": "Pago parcial"
   }'
+```
+
+#### Listar Pagos de una Factura
+```bash
+# Primera página (10 pagos por defecto)
+curl "http://localhost:8000/api/v1/invoices/a1b2c3d4-e5f6-7890-abcd-ef1234567890/payments"
+
+# Con paginación personalizada
+curl "http://localhost:8000/api/v1/invoices/a1b2c3d4-e5f6-7890-abcd-ef1234567890/payments?skip=0&limit=20"
 ```
 
 **Nota**: Reemplaza `a1b2c3d4-e5f6-7890-abcd-ef1234567890` con el UUID real de la factura.

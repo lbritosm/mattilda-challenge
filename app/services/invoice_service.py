@@ -165,6 +165,28 @@ class InvoiceService:
         return db_payment
     
     @staticmethod
+    def get_payments(
+        db: Session,
+        invoice_id: UUID,
+        skip: int = 0,
+        limit: int = 10
+    ) -> List[Payment]:
+        """Obtiene una lista de pagos de una factura con paginación, ordenados por fecha de pago descendente"""
+        # Validar que la factura existe
+        invoice = InvoiceService.get_invoice(db, invoice_id)
+        if not invoice:
+            raise ValueError(f"Invoice with id {invoice_id} does not exist")
+        
+        return db.query(Payment).filter(
+            Payment.invoice_id == invoice_id
+        ).order_by(Payment.payment_date.desc()).offset(skip).limit(limit).all()
+    
+    @staticmethod
+    def count_payments(db: Session, invoice_id: UUID) -> int:
+        """Cuenta el total de pagos de una factura"""
+        return db.query(Payment).filter(Payment.invoice_id == invoice_id).count()
+    
+    @staticmethod
     def _get_total_paid(db: Session, invoice_id: UUID) -> Decimal:
         """Calcula el total pagado de una factura"""
         result = db.query(func.sum(Payment.amount)).filter(

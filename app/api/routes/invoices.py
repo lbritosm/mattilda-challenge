@@ -142,6 +142,36 @@ def delete_invoice(
     return None
 
 
+@router.get("/{invoice_id}/payments", response_model=PaginatedResponse[Payment])
+def get_invoice_payments(
+    invoice_id: UUID,
+    skip: int = Query(0, ge=0, description="Número de pagos a saltar"),
+    limit: int = Query(settings.DEFAULT_PAGE_SIZE, ge=1, le=settings.MAX_PAGE_SIZE, description="Número de pagos a retornar"),
+    db: Session = Depends(get_db)
+):
+    """
+    Obtiene la lista de pagos asociados a una factura con paginación.
+    
+    Retorna información de paginación incluyendo:
+    - items: Lista de pagos de la página actual
+    - total: Total de pagos disponibles
+    - skip: Número de pagos saltados
+    - limit: Límite de pagos por página
+    - has_next: Indica si hay más páginas
+    - has_previous: Indica si hay páginas anteriores
+    
+    Los pagos están ordenados por fecha de pago descendente (más recientes primero).
+    """
+    try:
+        items = InvoiceService.get_payments(db, invoice_id, skip=skip, limit=limit)
+        total = InvoiceService.count_payments(db, invoice_id)
+        return PaginatedResponse.create(items=items, total=total, skip=skip, limit=limit)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.post("/{invoice_id}/payments", response_model=Payment, status_code=201)
 def create_payment(
     invoice_id: UUID,

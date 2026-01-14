@@ -88,6 +88,21 @@ def test_create_payment(client, db):
     assert "payments" in invoice_data
     assert len(invoice_data["payments"]) == 1
     assert float(invoice_data["payments"][0]["amount"]) == 300.00
+    
+    # Verificar el endpoint GET para listar pagos de una factura
+    payments_response = client.get(f"/api/v1/invoices/{invoice_id}/payments")
+    assert payments_response.status_code == 200
+    payments_data = payments_response.json()
+    # Verificar estructura de respuesta paginada
+    assert "items" in payments_data
+    assert "total" in payments_data
+    assert "skip" in payments_data
+    assert "limit" in payments_data
+    assert "has_next" in payments_data
+    assert "has_previous" in payments_data
+    assert len(payments_data["items"]) == 1
+    assert payments_data["total"] == 1
+    assert float(payments_data["items"][0]["amount"]) == 300.00
 
 
 def test_account_status(client, db):
@@ -128,6 +143,70 @@ def test_account_status(client, db):
     assert "total_invoices" in data
     assert data["total_invoices"] == 2
     assert len(data["invoices"]) <= data["limit"]
+
+
+def test_get_invoice_payments(client, db):
+    """Test para listar pagos de una factura con paginación"""
+    # Crear colegio y estudiante
+    school_data = {"name": "Colegio Test", "is_active": True}
+    school_response = client.post("/api/v1/schools/", json=school_data)
+    school_id = school_response.json()["id"]
+    
+    student_data = {
+        "first_name": "Juan",
+        "last_name": "Pérez",
+        "school_id": school_id,
+        "is_active": True
+    }
+    student_response = client.post("/api/v1/students/", json=student_data)
+    student_id = student_response.json()["id"]
+    
+    # Crear factura
+    due_date = (datetime.now() + timedelta(days=30)).isoformat()
+    invoice_data = {
+        "invoice_number": "INV-PAYMENTS-001",
+        "student_id": student_id,
+        "amount": "1000.00",
+        "due_date": due_date,
+        "status": "pending"
+    }
+    invoice_response = client.post("/api/v1/invoices/", json=invoice_data)
+    invoice_id = invoice_response.json()["id"]
+    
+    # Crear múltiples pagos
+    for i in range(3):
+        payment_data = {
+            "invoice_id": invoice_id,
+            "amount": "100.00",
+            "payment_method": "cash",
+            "payment_reference": f"REF-{i}"
+        }
+        client.post(f"/api/v1/invoices/{invoice_id}/payments", json=payment_data)
+    
+    # Obtener lista de pagos
+    response = client.get(f"/api/v1/invoices/{invoice_id}/payments?skip=0&limit=10")
+    assert response.status_code == 200
+    data = response.json()
+    # Verificar estructura de respuesta paginada
+    assert "items" in data
+    assert "total" in data
+    assert len(data["items"]) == 3
+    assert data["total"] == 3
+    assert data["has_next"] == False
+    assert data["has_previous"] == False
+    
+    # Verificar que los pagos están ordenados por fecha descendente
+    payment_dates = [item["payment_date"] for item in data["items"]]
+    assert payment_dates == sorted(payment_dates, reverse=True)
+    
+    # Test con paginación
+    response_page = client.get(f"/api/v1/invoices/{invoice_id}/payments?skip=0&limit=2")
+    assert response_page.status_code == 200
+    data_page = response_page.json()
+    assert len(data_page["items"]) == 2
+    assert data_page["total"] == 3
+    assert data_page["has_next"] == True
+    assert data_page["has_previous"] == False
 
 
 def test_get_invoices_pagination(client, db):
