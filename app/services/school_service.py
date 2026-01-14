@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List, Optional
-from decimal import Decimal
+from uuid import UUID
 from app.models.school import School
 from app.models.student import Student
 from app.models.invoice import Invoice, InvoiceStatus
@@ -13,7 +13,7 @@ class SchoolService:
     """Servicio para operaciones relacionadas con Schools"""
     
     @staticmethod
-    def get_school(db: Session, school_id: int) -> Optional[School]:
+    def get_school(db: Session, school_id: UUID) -> Optional[School]:
         """Obtiene un colegio por ID"""
         return db.query(School).filter(School.id == school_id).first()
     
@@ -54,7 +54,7 @@ class SchoolService:
     @staticmethod
     def update_school(
         db: Session, 
-        school_id: int, 
+        school_id: UUID, 
         school_update: SchoolUpdate
     ) -> Optional[School]:
         """Actualiza un colegio existente"""
@@ -71,7 +71,7 @@ class SchoolService:
         return db_school
     
     @staticmethod
-    def delete_school(db: Session, school_id: int) -> bool:
+    def delete_school(db: Session, school_id: UUID) -> bool:
         """Elimina un colegio"""
         db_school = SchoolService.get_school(db, school_id)
         if not db_school:
@@ -82,7 +82,7 @@ class SchoolService:
         return True
     
     @staticmethod
-    def count_students(db: Session, school_id: int) -> int:
+    def count_students(db: Session, school_id: UUID) -> int:
         """Cuenta el número de estudiantes activos de un colegio"""
         return db.query(Student).filter(
             Student.school_id == school_id,

@@ -97,35 +97,35 @@ def set_cached_statement(key: str, value: Any, ttl: int = 60):
         logger.warning(f"Error guardando en cache: {e}")
 
 
-def invalidate_student_statement(student_id: int):
+def invalidate_student_statement(student_id):
     """
     Invalida el cache del statement de un estudiante.
     
     Args:
-        student_id: ID del estudiante
+        student_id: ID del estudiante (UUID)
     """
     key = f"student:{student_id}:statement"
     _invalidate_key(key)
 
 
-def invalidate_school_statement(school_id: int):
+def invalidate_school_statement(school_id):
     """
     Invalida el cache del statement de un colegio.
     
     Args:
-        school_id: ID del colegio
+        school_id: ID del colegio (UUID)
     """
     key = f"school:{school_id}:statement"
     _invalidate_key(key)
 
 
-def invalidate_statements_for_invoice(invoice_id: int, db):
+def invalidate_statements_for_invoice(invoice_id, db):
     """
     Invalida los statements relacionados con una factura.
     Necesita acceso a la DB para obtener student_id y school_id.
     
     Args:
-        invoice_id: ID de la factura
+        invoice_id: ID de la factura (UUID)
         db: Sesión de base de datos
     """
     from app.models.invoice import Invoice
@@ -137,13 +137,13 @@ def invalidate_statements_for_invoice(invoice_id: int, db):
             invalidate_school_statement(invoice.student.school_id)
 
 
-def invalidate_statements_for_payment(payment_id: int, db):
+def invalidate_statements_for_payment(payment_id, db):
     """
     Invalida los statements relacionados con un pago.
     Necesita acceso a la DB para obtener invoice -> student -> school.
     
     Args:
-        payment_id: ID del pago
+        payment_id: ID del pago (UUID)
         db: Sesión de base de datos
     """
     from app.models.payment import Payment

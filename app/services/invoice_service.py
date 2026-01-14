@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List, Optional
 from decimal import Decimal
+from uuid import UUID
 from app.models.invoice import Invoice, InvoiceStatus
 from app.models.payment import Payment
 from app.models.student import Student
@@ -13,7 +14,7 @@ class InvoiceService:
     """Servicio para operaciones relacionadas con Invoices"""
     
     @staticmethod
-    def get_invoice(db: Session, invoice_id: int) -> Optional[Invoice]:
+    def get_invoice(db: Session, invoice_id: UUID) -> Optional[Invoice]:
         """Obtiene una factura por ID"""
         return db.query(Invoice).filter(Invoice.id == invoice_id).first()
     
@@ -22,8 +23,8 @@ class InvoiceService:
         db: Session,
         skip: int = 0,
         limit: int = 10,
-        student_id: Optional[int] = None,
-        school_id: Optional[int] = None,
+        student_id: Optional[UUID] = None,
+        school_id: Optional[UUID] = None,
         status: Optional[InvoiceStatus] = None
     ) -> List[Invoice]:
         """Obtiene una lista de facturas con paginación y filtros"""
@@ -43,8 +44,8 @@ class InvoiceService:
     @staticmethod
     def count_invoices(
         db: Session,
-        student_id: Optional[int] = None,
-        school_id: Optional[int] = None,
+        student_id: Optional[UUID] = None,
+        school_id: Optional[UUID] = None,
         status: Optional[InvoiceStatus] = None
     ) -> int:
         """Cuenta el total de facturas"""
@@ -85,7 +86,7 @@ class InvoiceService:
     @staticmethod
     def update_invoice(
         db: Session,
-        invoice_id: int,
+        invoice_id: UUID,
         invoice_update: InvoiceUpdate
     ) -> Optional[Invoice]:
         """Actualiza una factura existente"""
@@ -121,7 +122,7 @@ class InvoiceService:
         return db_invoice
     
     @staticmethod
-    def delete_invoice(db: Session, invoice_id: int) -> bool:
+    def delete_invoice(db: Session, invoice_id: UUID) -> bool:
         """Elimina una factura"""
         db_invoice = InvoiceService.get_invoice(db, invoice_id)
         if not db_invoice:
@@ -159,7 +160,7 @@ class InvoiceService:
         return db_payment
     
     @staticmethod
-    def _get_total_paid(db: Session, invoice_id: int) -> Decimal:
+    def _get_total_paid(db: Session, invoice_id: UUID) -> Decimal:
         """Calcula el total pagado de una factura"""
         result = db.query(func.sum(Payment.amount)).filter(
             Payment.invoice_id == invoice_id

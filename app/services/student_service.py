@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 from typing import List, Optional
+from uuid import UUID
 from app.models.student import Student
 from app.models.school import School
 from app.schemas.student import StudentCreate, StudentUpdate
@@ -9,7 +10,7 @@ class StudentService:
     """Servicio para operaciones relacionadas con Students"""
     
     @staticmethod
-    def get_student(db: Session, student_id: int) -> Optional[Student]:
+    def get_student(db: Session, student_id: UUID) -> Optional[Student]:
         """Obtiene un estudiante por ID"""
         return db.query(Student).filter(Student.id == student_id).first()
     
@@ -18,7 +19,7 @@ class StudentService:
         db: Session,
         skip: int = 0,
         limit: int = 10,
-        school_id: Optional[int] = None,
+        school_id: Optional[UUID] = None,
         is_active: Optional[bool] = None
     ) -> List[Student]:
         """Obtiene una lista de estudiantes con paginación y filtros"""
@@ -35,7 +36,7 @@ class StudentService:
     @staticmethod
     def count_students(
         db: Session,
-        school_id: Optional[int] = None,
+        school_id: Optional[UUID] = None,
         is_active: Optional[bool] = None
     ) -> int:
         """Cuenta el total de estudiantes"""
@@ -66,7 +67,7 @@ class StudentService:
     @staticmethod
     def update_student(
         db: Session,
-        student_id: int,
+        student_id: UUID,
         student_update: StudentUpdate
     ) -> Optional[Student]:
         """Actualiza un estudiante existente"""
@@ -89,7 +90,7 @@ class StudentService:
         return db_student
     
     @staticmethod
-    def delete_student(db: Session, student_id: int) -> bool:
+    def delete_student(db: Session, student_id: UUID) -> bool:
         """Elimina un estudiante"""
         db_student = StudentService.get_student(db, student_id)
         if not db_student:

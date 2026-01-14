@@ -1,9 +1,11 @@
-from fastapi import FastAPI, status
+from fastapi import FastAPI, status, Request
 from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from app.core.database import get_db, init_db
 from app.api.routes import api_router
+from app.core.exceptions import validation_exception_handler
 import logging
 
 # Configurar logging
@@ -46,6 +48,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Agregar exception handler personalizado para errores de validación
+app.add_exception_handler(RequestValidationError, validation_exception_handler)
 
 # Incluir rutas
 app.include_router(api_router, prefix="/api/v1")

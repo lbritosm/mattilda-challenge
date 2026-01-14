@@ -1,6 +1,8 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Numeric
+from sqlalchemy import Column, String, DateTime, ForeignKey, Numeric
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
+import uuid
 from app.core.database import Base
 
 
@@ -9,8 +11,8 @@ class Payment(Base):
     
     __tablename__ = "payments"
     
-    id = Column(Integer, primary_key=True, index=True)
-    invoice_id = Column(Integer, ForeignKey("invoices.id"), nullable=False, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    invoice_id = Column(UUID(as_uuid=True), ForeignKey("invoices.id"), nullable=False, index=True)
     amount = Column(Numeric(10, 2), nullable=False)
     payment_method = Column(String(50), nullable=True)  # cash, card, transfer, etc.
     payment_reference = Column(String(100), nullable=True)

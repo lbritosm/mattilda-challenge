@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
+from uuid import UUID
 from app.core.database import get_db
 from app.schemas.student import Student, StudentCreate, StudentUpdate
 from app.schemas.account import StudentAccountStatus
@@ -32,7 +33,7 @@ def create_student(
 def get_students(
     skip: int = Query(0, ge=0, description="Número de registros a saltar"),
     limit: int = Query(settings.DEFAULT_PAGE_SIZE, ge=1, le=settings.MAX_PAGE_SIZE, description="Número de registros a retornar"),
-    school_id: Optional[int] = Query(None, description="Filtrar por ID de colegio"),
+    school_id: Optional[UUID] = Query(None, description="Filtrar por ID de colegio"),
     is_active: Optional[bool] = Query(None, description="Filtrar por estado activo"),
     db: Session = Depends(get_db)
 ):
@@ -50,7 +51,7 @@ def get_students(
 
 @router.get("/count", response_model=dict)
 def count_students(
-    school_id: Optional[int] = Query(None, description="Filtrar por ID de colegio"),
+    school_id: Optional[UUID] = Query(None, description="Filtrar por ID de colegio"),
     is_active: Optional[bool] = Query(None, description="Filtrar por estado activo"),
     db: Session = Depends(get_db)
 ):
@@ -63,7 +64,7 @@ def count_students(
 
 @router.get("/{student_id}", response_model=Student)
 def get_student(
-    student_id: int,
+    student_id: UUID,
     db: Session = Depends(get_db)
 ):
     """
@@ -77,7 +78,7 @@ def get_student(
 
 @router.put("/{student_id}", response_model=Student)
 def update_student(
-    student_id: int,
+    student_id: UUID,
     student_update: StudentUpdate,
     db: Session = Depends(get_db)
 ):
@@ -97,7 +98,7 @@ def update_student(
 
 @router.delete("/{student_id}", status_code=204)
 def delete_student(
-    student_id: int,
+    student_id: UUID,
     db: Session = Depends(get_db)
 ):
     """
@@ -111,7 +112,7 @@ def delete_student(
 
 @router.get("/{student_id}/statement", response_model=StudentAccountStatus)
 def get_student_statement(
-    student_id: int,
+    student_id: UUID,
     db: Session = Depends(get_db)
 ):
     """
@@ -125,7 +126,7 @@ def get_student_statement(
     
     Los resultados se cachean por 60 segundos para mejorar el rendimiento.
     """
-    cache_key = f"student:{student_id}:statement"
+    cache_key = f"student:{str(student_id)}:statement"
     
     # Intentar obtener de cache
     cached = get_cached_statement(cache_key)

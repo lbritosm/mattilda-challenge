@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
+from uuid import UUID
 from app.core.database import get_db
 from app.schemas.invoice import Invoice, InvoiceCreate, InvoiceUpdate
 from app.schemas.payment import Payment, PaymentCreate
@@ -35,8 +36,8 @@ def create_invoice(
 def get_invoices(
     skip: int = Query(0, ge=0, description="Número de registros a saltar"),
     limit: int = Query(settings.DEFAULT_PAGE_SIZE, ge=1, le=settings.MAX_PAGE_SIZE, description="Número de registros a retornar"),
-    student_id: Optional[int] = Query(None, description="Filtrar por ID de estudiante"),
-    school_id: Optional[int] = Query(None, description="Filtrar por ID de colegio"),
+    student_id: Optional[UUID] = Query(None, description="Filtrar por ID de estudiante"),
+    school_id: Optional[UUID] = Query(None, description="Filtrar por ID de colegio"),
     status: Optional[InvoiceStatus] = Query(None, description="Filtrar por estado"),
     db: Session = Depends(get_db)
 ):
@@ -55,8 +56,8 @@ def get_invoices(
 
 @router.get("/count", response_model=dict)
 def count_invoices(
-    student_id: Optional[int] = Query(None, description="Filtrar por ID de estudiante"),
-    school_id: Optional[int] = Query(None, description="Filtrar por ID de colegio"),
+    student_id: Optional[UUID] = Query(None, description="Filtrar por ID de estudiante"),
+    school_id: Optional[UUID] = Query(None, description="Filtrar por ID de colegio"),
     status: Optional[InvoiceStatus] = Query(None, description="Filtrar por estado"),
     db: Session = Depends(get_db)
 ):
@@ -74,7 +75,7 @@ def count_invoices(
 
 @router.get("/{invoice_id}", response_model=Invoice)
 def get_invoice(
-    invoice_id: int,
+    invoice_id: UUID,
     db: Session = Depends(get_db)
 ):
     """
@@ -88,7 +89,7 @@ def get_invoice(
 
 @router.put("/{invoice_id}", response_model=Invoice)
 def update_invoice(
-    invoice_id: int,
+    invoice_id: UUID,
     invoice_update: InvoiceUpdate,
     db: Session = Depends(get_db)
 ):
@@ -110,7 +111,7 @@ def update_invoice(
 
 @router.delete("/{invoice_id}", status_code=204)
 def delete_invoice(
-    invoice_id: int,
+    invoice_id: UUID,
     db: Session = Depends(get_db)
 ):
     """
@@ -127,7 +128,7 @@ def delete_invoice(
 
 @router.post("/{invoice_id}/payments", response_model=Payment, status_code=201)
 def create_payment(
-    invoice_id: int,
+    invoice_id: UUID,
     payment: PaymentCreate,
     db: Session = Depends(get_db)
 ):

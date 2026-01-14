@@ -1,7 +1,9 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Numeric, Enum as SQLEnum
+from sqlalchemy import Column, String, DateTime, ForeignKey, Numeric, Enum as SQLEnum
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import enum
+import uuid
 from app.core.database import Base
 
 
@@ -18,9 +20,9 @@ class Invoice(Base):
     
     __tablename__ = "invoices"
     
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     invoice_number = Column(String(50), unique=True, nullable=False, index=True)
-    student_id = Column(Integer, ForeignKey("students.id"), nullable=False, index=True)
+    student_id = Column(UUID(as_uuid=True), ForeignKey("students.id"), nullable=False, index=True)
     amount = Column(Numeric(10, 2), nullable=False)
     description = Column(String(500), nullable=True)
     due_date = Column(DateTime(timezone=True), nullable=False)

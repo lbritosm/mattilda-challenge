@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
+from uuid import UUID
 from app.core.database import get_db
 from app.schemas.school import School, SchoolCreate, SchoolUpdate
 from app.schemas.account import SchoolAccountStatus
@@ -53,7 +54,7 @@ def count_schools(
 
 @router.get("/{school_id}", response_model=School)
 def get_school(
-    school_id: int,
+    school_id: UUID,
     db: Session = Depends(get_db)
 ):
     """
@@ -67,7 +68,7 @@ def get_school(
 
 @router.put("/{school_id}", response_model=School)
 def update_school(
-    school_id: int,
+    school_id: UUID,
     school_update: SchoolUpdate,
     db: Session = Depends(get_db)
 ):
@@ -82,7 +83,7 @@ def update_school(
 
 @router.delete("/{school_id}", status_code=204)
 def delete_school(
-    school_id: int,
+    school_id: UUID,
     db: Session = Depends(get_db)
 ):
     """
@@ -96,7 +97,7 @@ def delete_school(
 
 @router.get("/{school_id}/students/count", response_model=dict)
 def count_school_students(
-    school_id: int,
+    school_id: UUID,
     db: Session = Depends(get_db)
 ):
     """
@@ -107,12 +108,12 @@ def count_school_students(
         raise HTTPException(status_code=404, detail="School not found")
     
     count = SchoolService.count_students(db, school_id)
-    return {"school_id": school_id, "total_students": count}
+    return {"school_id": str(school_id), "total_students": count}
 
 
 @router.get("/{school_id}/statement", response_model=SchoolAccountStatus)
 def get_school_statement(
-    school_id: int,
+    school_id: UUID,
     db: Session = Depends(get_db)
 ):
     """
@@ -127,7 +128,7 @@ def get_school_statement(
     
     Los resultados se cachean por 60 segundos para mejorar el rendimiento.
     """
-    cache_key = f"school:{school_id}:statement"
+    cache_key = f"school:{str(school_id)}:statement"
     
     # Intentar obtener de cache
     cached = get_cached_statement(cache_key)

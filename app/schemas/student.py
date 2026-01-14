@@ -1,6 +1,7 @@
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 from datetime import datetime, date
+from uuid import UUID
 
 
 class StudentBase(BaseModel):
@@ -10,7 +11,7 @@ class StudentBase(BaseModel):
     email: Optional[EmailStr] = Field(None, description="Email del estudiante")
     date_of_birth: Optional[date] = Field(None, description="Fecha de nacimiento")
     student_code: Optional[str] = Field(None, max_length=50, description="Código único del estudiante")
-    school_id: int = Field(..., description="ID del colegio al que pertenece")
+    school_id: UUID = Field(..., description="ID del colegio al que pertenece")
     is_active: bool = Field(True, description="Indica si el estudiante está activo")
 
 
@@ -26,13 +27,13 @@ class StudentUpdate(BaseModel):
     email: Optional[EmailStr] = None
     date_of_birth: Optional[date] = None
     student_code: Optional[str] = Field(None, max_length=50)
-    school_id: Optional[int] = None
+    school_id: Optional[UUID] = None
     is_active: Optional[bool] = None
 
 
 class Student(StudentBase):
     """Schema para retornar un Student"""
-    id: int
+    id: UUID
     created_at: datetime
     updated_at: Optional[datetime] = None
     

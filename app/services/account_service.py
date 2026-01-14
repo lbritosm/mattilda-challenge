@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List
 from decimal import Decimal
+from uuid import UUID
 from app.models.school import School
 from app.models.student import Student
 from app.models.invoice import Invoice
@@ -14,7 +15,7 @@ class AccountService:
     """Servicio para calcular estados de cuenta"""
     
     @staticmethod
-    def get_school_account_status(db: Session, school_id: int) -> SchoolAccountStatus:
+    def get_school_account_status(db: Session, school_id: UUID) -> SchoolAccountStatus:
         """
         Calcula el estado de cuenta de un colegio.
         Incluye: total facturado, total pagado, total pendiente y listado de facturas.
@@ -64,7 +65,7 @@ class AccountService:
         )
     
     @staticmethod
-    def get_student_account_status(db: Session, student_id: int) -> StudentAccountStatus:
+    def get_student_account_status(db: Session, student_id: UUID) -> StudentAccountStatus:
         """
         Calcula el estado de cuenta de un estudiante.
         Incluye: total facturado, total pagado, total pendiente y listado de facturas.

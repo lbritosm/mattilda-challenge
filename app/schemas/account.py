@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import List
 from decimal import Decimal
+from uuid import UUID
 from app.schemas.invoice import Invoice
 
 
@@ -13,7 +14,7 @@ class AccountStatus(BaseModel):
 
 class SchoolAccountStatus(AccountStatus):
     """Schema para estado de cuenta de un colegio"""
-    school_id: int
+    school_id: UUID
     school_name: str
     total_students: int
     invoices: List[Invoice] = []
@@ -21,9 +22,9 @@ class SchoolAccountStatus(AccountStatus):
 
 class StudentAccountStatus(AccountStatus):
     """Schema para estado de cuenta de un estudiante"""
-    student_id: int
+    student_id: UUID
     student_name: str
-    school_id: int
+    school_id: UUID
     school_name: str
     invoices: List[Invoice] = []
 

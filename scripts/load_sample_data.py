@@ -65,7 +65,7 @@ def load_sample_data():
                 first_name=data["first_name"],
                 last_name=data["last_name"],
                 email=data["email"],
-                student_code=f"STU-{data['school'].id:03d}-{i:03d}",
+                student_code=f"STU-{str(data['school'].id)[:8]}-{i:03d}",
                 school_id=data["school"].id,
                 is_active=True
             )
