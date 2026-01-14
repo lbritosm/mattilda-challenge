@@ -310,8 +310,12 @@ docker compose exec backend pytest
 # Ejecutar con salida detallada (verbose)
 docker compose exec backend pytest -v
 
-# Ejecutar con cobertura
+# Ejecutar con cobertura (requiere pytest-cov)
 docker compose exec backend pytest --cov=app tests/
+
+# Nota: Si obtienes un error sobre --cov, reconstruye el contenedor:
+# docker compose build backend
+# docker compose up -d
 
 # Ejecutar pruebas específicas
 docker compose exec backend pytest tests/test_schools.py

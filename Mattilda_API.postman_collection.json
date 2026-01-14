@@ -1,0 +1,582 @@
+{
+	"info": {
+		"_postman_id": "mattilda-api-collection",
+		"name": "Mattilda API",
+		"description": "Colección completa de endpoints para la API de Mattilda - Sistema de gestión de colegios, estudiantes y facturación",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Health & Info",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/health",
+							"host": ["{{base_url}}"],
+							"path": ["health"]
+						},
+						"description": "Verifica el estado de la API"
+					}
+				},
+				{
+					"name": "Metrics",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/metrics",
+							"host": ["{{base_url}}"],
+							"path": ["metrics"]
+						},
+						"description": "Obtiene métricas básicas de la API"
+					}
+				}
+			]
+		},
+		{
+			"name": "Schools",
+			"item": [
+				{
+					"name": "Create School",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Colegio San José\",\n  \"address\": \"Calle Principal 123\",\n  \"phone\": \"123456789\",\n  \"email\": \"info@colegiosanjose.edu\",\n  \"is_active\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/schools/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "schools", ""]
+						},
+						"description": "Crea un nuevo colegio"
+					}
+				},
+				{
+					"name": "List Schools",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/schools/?skip=0&limit=10&is_active=true",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "schools", ""],
+							"query": [
+								{
+									"key": "skip",
+									"value": "0",
+									"description": "Número de registros a saltar"
+								},
+								{
+									"key": "limit",
+									"value": "10",
+									"description": "Número de registros a retornar (máximo 100)"
+								},
+								{
+									"key": "is_active",
+									"value": "true",
+									"description": "Filtrar por estado activo (opcional)"
+								}
+							]
+						},
+						"description": "Lista colegios con paginación y filtros"
+					}
+				},
+				{
+					"name": "Count Schools",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/schools/count?is_active=true",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "schools", "count"],
+							"query": [
+								{
+									"key": "is_active",
+									"value": "true",
+									"description": "Filtrar por estado activo (opcional)"
+								}
+							]
+						},
+						"description": "Cuenta el total de colegios"
+					}
+				},
+				{
+					"name": "Get School by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/schools/{{school_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "schools", "{{school_id}}"]
+						},
+						"description": "Obtiene un colegio por UUID"
+					}
+				},
+				{
+					"name": "Update School",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Colegio San José Actualizado\",\n  \"address\": \"Nueva Dirección 456\",\n  \"phone\": \"987654321\",\n  \"email\": \"nuevo@colegiosanjose.edu\",\n  \"is_active\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/schools/{{school_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "schools", "{{school_id}}"]
+						},
+						"description": "Actualiza un colegio existente"
+					}
+				},
+				{
+					"name": "Delete School",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/schools/{{school_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "schools", "{{school_id}}"]
+						},
+						"description": "Elimina un colegio"
+					}
+				},
+				{
+					"name": "Count School Students",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/schools/{{school_id}}/students/count",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "schools", "{{school_id}}", "students", "count"]
+						},
+						"description": "Cuenta el número de estudiantes activos de un colegio"
+					}
+				},
+				{
+					"name": "Get School Statement",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/schools/{{school_id}}/statement?skip=0&limit=10",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "schools", "{{school_id}}", "statement"],
+							"query": [
+								{
+									"key": "skip",
+									"value": "0",
+									"description": "Número de facturas a saltar"
+								},
+								{
+									"key": "limit",
+									"value": "10",
+									"description": "Número de facturas a retornar (máximo 100)"
+								}
+							]
+						},
+						"description": "Obtiene el estado de cuenta de un colegio (con cache)"
+					}
+				}
+			]
+		},
+		{
+			"name": "Students",
+			"item": [
+				{
+					"name": "Create Student",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"first_name\": \"Juan\",\n  \"last_name\": \"Pérez\",\n  \"email\": \"juan.perez@email.com\",\n  \"date_of_birth\": \"2010-05-15\",\n  \"student_code\": \"STU-001\",\n  \"school_id\": \"{{school_id}}\",\n  \"is_active\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/students/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "students", ""]
+						},
+						"description": "Crea un nuevo estudiante"
+					}
+				},
+				{
+					"name": "List Students",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/students/?skip=0&limit=10&school_id={{school_id}}&is_active=true",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "students", ""],
+							"query": [
+								{
+									"key": "skip",
+									"value": "0",
+									"description": "Número de registros a saltar"
+								},
+								{
+									"key": "limit",
+									"value": "10",
+									"description": "Número de registros a retornar (máximo 100)"
+								},
+								{
+									"key": "school_id",
+									"value": "{{school_id}}",
+									"description": "Filtrar por ID de colegio (opcional)"
+								},
+								{
+									"key": "is_active",
+									"value": "true",
+									"description": "Filtrar por estado activo (opcional)"
+								}
+							]
+						},
+						"description": "Lista estudiantes con paginación y filtros"
+					}
+				},
+				{
+					"name": "Count Students",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/students/count?school_id={{school_id}}&is_active=true",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "students", "count"],
+							"query": [
+								{
+									"key": "school_id",
+									"value": "{{school_id}}",
+									"description": "Filtrar por ID de colegio (opcional)"
+								},
+								{
+									"key": "is_active",
+									"value": "true",
+									"description": "Filtrar por estado activo (opcional)"
+								}
+							]
+						},
+						"description": "Cuenta el total de estudiantes"
+					}
+				},
+				{
+					"name": "Get Student by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/students/{{student_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "students", "{{student_id}}"]
+						},
+						"description": "Obtiene un estudiante por UUID"
+					}
+				},
+				{
+					"name": "Update Student",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"first_name\": \"Juan Carlos\",\n  \"last_name\": \"Pérez García\",\n  \"email\": \"juan.perez.nuevo@email.com\",\n  \"is_active\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/students/{{student_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "students", "{{student_id}}"]
+						},
+						"description": "Actualiza un estudiante existente. Nota: No se puede cambiar school_id si el estudiante tiene deuda."
+					}
+				},
+				{
+					"name": "Delete Student",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/students/{{student_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "students", "{{student_id}}"]
+						},
+						"description": "Elimina un estudiante"
+					}
+				},
+				{
+					"name": "Get Student Statement",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/students/{{student_id}}/statement?skip=0&limit=10",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "students", "{{student_id}}", "statement"],
+							"query": [
+								{
+									"key": "skip",
+									"value": "0",
+									"description": "Número de facturas a saltar"
+								},
+								{
+									"key": "limit",
+									"value": "10",
+									"description": "Número de facturas a retornar (máximo 100)"
+								}
+							]
+						},
+						"description": "Obtiene el estado de cuenta de un estudiante (con cache)"
+					}
+				}
+			]
+		},
+		{
+			"name": "Invoices",
+			"item": [
+				{
+					"name": "Create Invoice",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"invoice_number\": \"INV-2024-001\",\n  \"school_id\": \"{{school_id}}\",\n  \"student_id\": \"{{student_id}}\",\n  \"total_amount\": \"1000.00\",\n  \"description\": \"Mensualidad Enero 2024\",\n  \"issue_date\": \"2024-01-15\",\n  \"due_date\": \"2024-02-15\",\n  \"status\": \"pending\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/invoices/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "invoices", ""]
+						},
+						"description": "Crea una nueva factura. Nota: school_id debe coincidir con el school_id del estudiante."
+					}
+				},
+				{
+					"name": "List Invoices",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/invoices/?skip=0&limit=10&student_id={{student_id}}&school_id={{school_id}}&status=pending",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "invoices", ""],
+							"query": [
+								{
+									"key": "skip",
+									"value": "0",
+									"description": "Número de registros a saltar"
+								},
+								{
+									"key": "limit",
+									"value": "10",
+									"description": "Número de registros a retornar (máximo 100)"
+								},
+								{
+									"key": "student_id",
+									"value": "{{student_id}}",
+									"description": "Filtrar por ID de estudiante (opcional)"
+								},
+								{
+									"key": "school_id",
+									"value": "{{school_id}}",
+									"description": "Filtrar por ID de colegio (opcional)"
+								},
+								{
+									"key": "status",
+									"value": "pending",
+									"description": "Filtrar por estado: pending, paid, partial, cancelled (opcional)"
+								}
+							]
+						},
+						"description": "Lista facturas con paginación y filtros"
+					}
+				},
+				{
+					"name": "Count Invoices",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/invoices/count?student_id={{student_id}}&school_id={{school_id}}&status=pending",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "invoices", "count"],
+							"query": [
+								{
+									"key": "student_id",
+									"value": "{{student_id}}",
+									"description": "Filtrar por ID de estudiante (opcional)"
+								},
+								{
+									"key": "school_id",
+									"value": "{{school_id}}",
+									"description": "Filtrar por ID de colegio (opcional)"
+								},
+								{
+									"key": "status",
+									"value": "pending",
+									"description": "Filtrar por estado (opcional)"
+								}
+							]
+						},
+						"description": "Cuenta el total de facturas"
+					}
+				},
+				{
+					"name": "Get Invoice by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/invoices/{{invoice_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "invoices", "{{invoice_id}}"]
+						},
+						"description": "Obtiene una factura por UUID (incluye lista de pagos asociados)"
+					}
+				},
+				{
+					"name": "Update Invoice",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"invoice_number\": \"INV-2024-001-UPDATED\",\n  \"total_amount\": \"1200.00\",\n  \"description\": \"Mensualidad Enero 2024 (Actualizada)\",\n  \"due_date\": \"2024-02-20\",\n  \"status\": \"pending\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/invoices/{{invoice_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "invoices", "{{invoice_id}}"]
+						},
+						"description": "Actualiza una factura existente"
+					}
+				},
+				{
+					"name": "Delete Invoice",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/invoices/{{invoice_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "invoices", "{{invoice_id}}"]
+						},
+						"description": "Elimina una factura"
+					}
+				},
+				{
+					"name": "List Invoice Payments",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/invoices/{{invoice_id}}/payments?skip=0&limit=10",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "invoices", "{{invoice_id}}", "payments"],
+							"query": [
+								{
+									"key": "skip",
+									"value": "0",
+									"description": "Número de pagos a saltar"
+								},
+								{
+									"key": "limit",
+									"value": "10",
+									"description": "Número de pagos a retornar (máximo 100)"
+								}
+							]
+						},
+						"description": "Lista los pagos asociados a una factura con paginación"
+					}
+				},
+				{
+					"name": "Create Payment",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"amount\": \"500.00\",\n  \"payment_method\": \"transfer\",\n  \"payment_reference\": \"TRF-001\",\n  \"notes\": \"Pago parcial de mensualidad\",\n  \"payment_date\": \"2024-01-20T10:30:00\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/invoices/{{invoice_id}}/payments",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "invoices", "{{invoice_id}}", "payments"]
+						},
+						"description": "Crea un nuevo pago para una factura. Nota: school_id y student_id se obtienen automáticamente de la factura. No incluir invoice_id, school_id ni student_id en el body."
+					}
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8000",
+			"type": "string"
+		},
+		{
+			"key": "school_id",
+			"value": "",
+			"type": "string",
+			"description": "UUID del colegio (se actualiza automáticamente al crear un colegio)"
+		},
+		{
+			"key": "student_id",
+			"value": "",
+			"type": "string",
+			"description": "UUID del estudiante (se actualiza automáticamente al crear un estudiante)"
+		},
+		{
+			"key": "invoice_id",
+			"value": "",
+			"type": "string",
+			"description": "UUID de la factura (se actualiza automáticamente al crear una factura)"
+		}
+	]
+}
+
