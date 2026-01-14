@@ -1,4 +1,5 @@
 import pytest
+import uuid
 from app.models.school import School
 from app.schemas.school import SchoolCreate
 
@@ -18,6 +19,12 @@ def test_create_school(client, db):
     data = response.json()
     assert data["name"] == school_data["name"]
     assert data["id"] is not None
+    # Verificar que el ID es un UUID válido
+    import uuid
+    try:
+        uuid.UUID(data["id"])
+    except ValueError:
+        pytest.fail(f"ID no es un UUID válido: {data['id']}")
 
 
 def test_get_school(client, db):
@@ -51,7 +58,19 @@ def test_get_schools(client, db):
     response = client.get("/api/v1/schools/?skip=0&limit=10")
     assert response.status_code == 200
     data = response.json()
-    assert len(data) == 5
+    # Verificar estructura de respuesta paginada
+    assert "items" in data
+    assert "total" in data
+    assert "skip" in data
+    assert "limit" in data
+    assert "has_next" in data
+    assert "has_previous" in data
+    assert len(data["items"]) == 5
+    assert data["total"] == 5
+    assert data["skip"] == 0
+    assert data["limit"] == 10
+    assert data["has_next"] == False
+    assert data["has_previous"] == False
 
 
 def test_update_school(client, db):
@@ -89,4 +108,11 @@ def test_delete_school(client, db):
     # Verificar que no existe
     get_response = client.get(f"/api/v1/schools/{school_id}")
     assert get_response.status_code == 404
+
+
+def test_invalid_uuid_format(client, db):
+    """Test para verificar que se rechazan UUIDs inválidos"""
+    # Intentar obtener con un ID inválido
+    response = client.get("/api/v1/schools/invalid-uuid")
+    assert response.status_code == 422  # Unprocessable Entity - error de validación
 

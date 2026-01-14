@@ -39,6 +39,13 @@ def test_school_account_status(client, db):
     data = response.json()
     assert float(data["total_invoiced"]) == 1000.00
     assert data["total_students"] == 2
+    # Verificar campos de paginación
+    assert "total_invoices" in data
+    assert "skip" in data
+    assert "limit" in data
+    assert "invoices" in data
+    assert data["total_invoices"] == 2
+    assert len(data["invoices"]) <= data["limit"]
 
 
 def test_student_account_status(client, db):
@@ -74,4 +81,11 @@ def test_student_account_status(client, db):
     data = response.json()
     assert float(data["total_invoiced"]) == 1000.00
     assert float(data["total_pending"]) == 1000.00
+    # Verificar campos de paginación
+    assert "total_invoices" in data
+    assert "skip" in data
+    assert "limit" in data
+    assert "invoices" in data
+    assert data["total_invoices"] == 1
+    assert len(data["invoices"]) <= data["limit"]
 

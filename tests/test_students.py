@@ -69,5 +69,9 @@ def test_get_students_by_school(client, db):
     response = client.get(f"/api/v1/students/?school_id={school_id}")
     assert response.status_code == 200
     data = response.json()
-    assert len(data) == 3
+    # Verificar estructura de respuesta paginada
+    assert "items" in data
+    assert "total" in data
+    assert len(data["items"]) == 3
+    assert data["total"] == 3
 

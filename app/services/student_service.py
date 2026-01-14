@@ -22,7 +22,7 @@ class StudentService:
         school_id: Optional[UUID] = None,
         is_active: Optional[bool] = None
     ) -> List[Student]:
-        """Obtiene una lista de estudiantes con paginación y filtros"""
+        """Obtiene una lista de estudiantes con paginación y filtros, ordenados por fecha de creación descendente"""
         query = db.query(Student)
         
         if school_id is not None:
@@ -31,7 +31,7 @@ class StudentService:
         if is_active is not None:
             query = query.filter(Student.is_active == is_active)
         
-        return query.offset(skip).limit(limit).all()
+        return query.order_by(Student.created_at.desc()).offset(skip).limit(limit).all()
     
     @staticmethod
     def count_students(

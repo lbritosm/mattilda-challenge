@@ -100,23 +100,47 @@ def set_cached_statement(key: str, value: Any, ttl: int = 60):
 def invalidate_student_statement(student_id):
     """
     Invalida el cache del statement de un estudiante.
+    Invalida todas las variantes de paginación usando un patrón.
     
     Args:
         student_id: ID del estudiante (UUID)
     """
-    key = f"student:{student_id}:statement"
-    _invalidate_key(key)
+    # Invalidar todas las variantes de paginación usando un patrón
+    redis_client = get_redis_client()
+    if not redis_client:
+        return
+    
+    try:
+        pattern = f"student:{student_id}:statement:*"
+        keys = redis_client.keys(pattern)
+        if keys:
+            redis_client.delete(*keys)
+            logger.info(f"Cache invalidado: {len(keys)} claves para student {student_id}")
+    except Exception as e:
+        logger.warning(f"Error invalidando cache: {e}")
 
 
 def invalidate_school_statement(school_id):
     """
     Invalida el cache del statement de un colegio.
+    Invalida todas las variantes de paginación usando un patrón.
     
     Args:
         school_id: ID del colegio (UUID)
     """
-    key = f"school:{school_id}:statement"
-    _invalidate_key(key)
+    # Invalidar todas las variantes de paginación usando un patrón
+    redis_client = get_redis_client()
+    if not redis_client:
+        return
+    
+    try:
+        pattern = f"school:{school_id}:statement:*"
+        keys = redis_client.keys(pattern)
+        if keys:
+            redis_client.delete(*keys)
+            logger.info(f"Cache invalidado: {len(keys)} claves para school {school_id}")
+    except Exception as e:
+        logger.warning(f"Error invalidando cache: {e}")
 
 
 def invalidate_statements_for_invoice(invoice_id, db):

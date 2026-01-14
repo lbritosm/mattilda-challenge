@@ -27,7 +27,7 @@ class InvoiceService:
         school_id: Optional[UUID] = None,
         status: Optional[InvoiceStatus] = None
     ) -> List[Invoice]:
-        """Obtiene una lista de facturas con paginación y filtros"""
+        """Obtiene una lista de facturas con paginación y filtros, ordenadas por fecha de creación descendente"""
         query = db.query(Invoice)
         
         if student_id is not None:
@@ -39,7 +39,7 @@ class InvoiceService:
         if status is not None:
             query = query.filter(Invoice.status == status)
         
-        return query.offset(skip).limit(limit).all()
+        return query.order_by(Invoice.created_at.desc()).offset(skip).limit(limit).all()
     
     @staticmethod
     def count_invoices(

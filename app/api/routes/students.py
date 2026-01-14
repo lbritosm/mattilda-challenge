@@ -5,6 +5,7 @@ from uuid import UUID
 from app.core.database import get_db
 from app.schemas.student import Student, StudentCreate, StudentUpdate
 from app.schemas.account import StudentAccountStatus
+from app.schemas.pagination import PaginatedResponse
 from app.services.student_service import StudentService
 from app.services.account_service import AccountService
 from app.core.cache import get_cached_statement, set_cached_statement
@@ -29,7 +30,7 @@ def create_student(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/", response_model=List[Student])
+@router.get("/", response_model=PaginatedResponse[Student])
 def get_students(
     skip: int = Query(0, ge=0, description="Número de registros a saltar"),
     limit: int = Query(settings.DEFAULT_PAGE_SIZE, ge=1, le=settings.MAX_PAGE_SIZE, description="Número de registros a retornar"),
@@ -39,14 +40,24 @@ def get_students(
 ):
     """
     Obtiene una lista de estudiantes con paginación y filtros.
+    
+    Retorna información de paginación incluyendo:
+    - items: Lista de estudiantes de la página actual
+    - total: Total de estudiantes disponibles
+    - skip: Número de registros saltados
+    - limit: Límite de registros por página
+    - has_next: Indica si hay más páginas
+    - has_previous: Indica si hay páginas anteriores
     """
-    return StudentService.get_students(
+    items = StudentService.get_students(
         db, 
         skip=skip, 
         limit=limit, 
         school_id=school_id, 
         is_active=is_active
     )
+    total = StudentService.count_students(db, school_id=school_id, is_active=is_active)
+    return PaginatedResponse.create(items=items, total=total, skip=skip, limit=limit)
 
 
 @router.get("/count", response_model=dict)
@@ -113,6 +124,8 @@ def delete_student(
 @router.get("/{student_id}/statement", response_model=StudentAccountStatus)
 def get_student_statement(
     student_id: UUID,
+    skip: int = Query(0, ge=0, description="Número de facturas a saltar"),
+    limit: int = Query(10, ge=1, le=100, description="Número de facturas a retornar (máximo 100)"),
     db: Session = Depends(get_db)
 ):
     """
@@ -122,11 +135,12 @@ def get_student_statement(
     - Total facturado
     - Total pagado
     - Total pendiente
-    - Listado de facturas del estudiante
+    - Listado de facturas paginado (ordenado por fecha de creación descendente)
     
     Los resultados se cachean por 60 segundos para mejorar el rendimiento.
+    La paginación permite manejar grandes volúmenes de facturas eficientemente.
     """
-    cache_key = f"student:{str(student_id)}:statement"
+    cache_key = f"student:{str(student_id)}:statement:skip:{skip}:limit:{limit}"
     
     # Intentar obtener de cache
     cached = get_cached_statement(cache_key)
@@ -135,7 +149,7 @@ def get_student_statement(
     
     # Si no está en cache, obtener de la base de datos
     try:
-        result = AccountService.get_student_account_status(db, student_id)
+        result = AccountService.get_student_account_status(db, student_id, skip=skip, limit=limit)
         # Guardar en cache (TTL: 60 segundos)
         set_cached_statement(cache_key, result, ttl=60)
         return result

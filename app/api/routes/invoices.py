@@ -5,6 +5,7 @@ from uuid import UUID
 from app.core.database import get_db
 from app.schemas.invoice import Invoice, InvoiceCreate, InvoiceUpdate
 from app.schemas.payment import Payment, PaymentCreate
+from app.schemas.pagination import PaginatedResponse
 from app.services.invoice_service import InvoiceService
 from app.models.invoice import InvoiceStatus
 from app.core.cache import invalidate_statements_for_invoice, invalidate_statements_for_payment
@@ -32,7 +33,7 @@ def create_invoice(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/", response_model=List[Invoice])
+@router.get("/", response_model=PaginatedResponse[Invoice])
 def get_invoices(
     skip: int = Query(0, ge=0, description="Número de registros a saltar"),
     limit: int = Query(settings.DEFAULT_PAGE_SIZE, ge=1, le=settings.MAX_PAGE_SIZE, description="Número de registros a retornar"),
@@ -43,8 +44,16 @@ def get_invoices(
 ):
     """
     Obtiene una lista de facturas con paginación y filtros.
+    
+    Retorna información de paginación incluyendo:
+    - items: Lista de facturas de la página actual
+    - total: Total de facturas disponibles
+    - skip: Número de registros saltados
+    - limit: Límite de registros por página
+    - has_next: Indica si hay más páginas
+    - has_previous: Indica si hay páginas anteriores
     """
-    return InvoiceService.get_invoices(
+    items = InvoiceService.get_invoices(
         db,
         skip=skip,
         limit=limit,
@@ -52,6 +61,13 @@ def get_invoices(
         school_id=school_id,
         status=status
     )
+    total = InvoiceService.count_invoices(
+        db,
+        student_id=student_id,
+        school_id=school_id,
+        status=status
+    )
+    return PaginatedResponse.create(items=items, total=total, skip=skip, limit=limit)
 
 
 @router.get("/count", response_model=dict)

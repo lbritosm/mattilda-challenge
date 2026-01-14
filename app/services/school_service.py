@@ -24,13 +24,13 @@ class SchoolService:
         limit: int = 10,
         is_active: Optional[bool] = None
     ) -> List[School]:
-        """Obtiene una lista de colegios con paginación"""
+        """Obtiene una lista de colegios con paginación, ordenados por fecha de creación descendente"""
         query = db.query(School)
         
         if is_active is not None:
             query = query.filter(School.is_active == is_active)
         
-        return query.offset(skip).limit(limit).all()
+        return query.order_by(School.created_at.desc()).offset(skip).limit(limit).all()
     
     @staticmethod
     def count_schools(db: Session, is_active: Optional[bool] = None) -> int:

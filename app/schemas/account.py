@@ -1,5 +1,5 @@
-from pydantic import BaseModel
-from typing import List
+from pydantic import BaseModel, Field
+from typing import List, Optional
 from decimal import Decimal
 from uuid import UUID
 from app.schemas.invoice import Invoice
@@ -18,6 +18,9 @@ class SchoolAccountStatus(AccountStatus):
     school_name: str
     total_students: int
     invoices: List[Invoice] = []
+    total_invoices: int = Field(0, description="Total de facturas")
+    skip: int = Field(0, description="Número de facturas saltadas")
+    limit: int = Field(10, description="Límite de facturas retornadas")
 
 
 class StudentAccountStatus(AccountStatus):
@@ -27,4 +30,7 @@ class StudentAccountStatus(AccountStatus):
     school_id: UUID
     school_name: str
     invoices: List[Invoice] = []
+    total_invoices: int = Field(0, description="Total de facturas")
+    skip: int = Field(0, description="Número de facturas saltadas")
+    limit: int = Field(10, description="Límite de facturas retornadas")
 

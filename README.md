@@ -85,7 +85,7 @@ Abre tu navegador en: http://localhost:8000/docs
 - `PUT /api/v1/schools/{school_id}` - Actualizar colegio
 - `DELETE /api/v1/schools/{school_id}` - Eliminar colegio
 - `GET /api/v1/schools/{school_id}/students/count` - Contar estudiantes
-- `GET /api/v1/schools/{school_id}/statement` - Estado de cuenta del colegio (con cache)
+- `GET /api/v1/schools/{school_id}/statement` - Estado de cuenta del colegio (con cache y paginación)
 
 #### Students
 - `POST /api/v1/students/` - Crear estudiante
@@ -93,7 +93,7 @@ Abre tu navegador en: http://localhost:8000/docs
 - `GET /api/v1/students/{student_id}` - Obtener estudiante por UUID
 - `PUT /api/v1/students/{student_id}` - Actualizar estudiante
 - `DELETE /api/v1/students/{student_id}` - Eliminar estudiante
-- `GET /api/v1/students/{student_id}/statement` - Estado de cuenta del estudiante (con cache)
+- `GET /api/v1/students/{student_id}/statement` - Estado de cuenta del estudiante (con cache y paginación)
 
 #### Invoices
 - `POST /api/v1/invoices/` - Crear factura
@@ -127,6 +127,18 @@ curl -X POST "http://localhost:8000/api/v1/schools/" \
   }'
 ```
 
+#### Listar Colegios (con paginación)
+```bash
+# Primera página (10 colegios por defecto)
+curl "http://localhost:8000/api/v1/schools/"
+
+# Segunda página con 20 colegios
+curl "http://localhost:8000/api/v1/schools/?skip=10&limit=20"
+
+# Filtrar solo colegios activos
+curl "http://localhost:8000/api/v1/schools/?is_active=true"
+```
+
 #### Crear un Estudiante
 ```bash
 curl -X POST "http://localhost:8000/api/v1/students/" \
@@ -158,6 +170,18 @@ curl -X POST "http://localhost:8000/api/v1/invoices/" \
 
 **Nota**: `student_id` debe ser un UUID válido del estudiante.
 
+#### Listar Facturas (con paginación)
+```bash
+# Primera página (10 facturas por defecto)
+curl "http://localhost:8000/api/v1/invoices/"
+
+# Filtrar por estudiante
+curl "http://localhost:8000/api/v1/invoices/?student_id=a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+
+# Filtrar por estado y paginación
+curl "http://localhost:8000/api/v1/invoices/?status=pending&skip=0&limit=20"
+```
+
 #### Registrar un Pago
 ```bash
 curl -X POST "http://localhost:8000/api/v1/invoices/a1b2c3d4-e5f6-7890-abcd-ef1234567890/payments" \
@@ -175,15 +199,26 @@ curl -X POST "http://localhost:8000/api/v1/invoices/a1b2c3d4-e5f6-7890-abcd-ef12
 
 #### Consultar Estado de Cuenta de un Estudiante
 ```bash
+# Primera página (10 facturas por defecto)
 curl "http://localhost:8000/api/v1/students/a1b2c3d4-e5f6-7890-abcd-ef1234567890/statement"
+
+# Con paginación personalizada
+curl "http://localhost:8000/api/v1/students/a1b2c3d4-e5f6-7890-abcd-ef1234567890/statement?skip=0&limit=20"
 ```
 
 #### Consultar Estado de Cuenta de un Colegio
 ```bash
+# Primera página (10 facturas por defecto)
 curl "http://localhost:8000/api/v1/schools/2c72f491-5084-4df9-be3a-dfa99bb16489/statement"
+
+# Con paginación personalizada
+curl "http://localhost:8000/api/v1/schools/2c72f491-5084-4df9-be3a-dfa99bb16489/statement?skip=10&limit=50"
 ```
 
-**Nota**: Reemplaza los UUIDs de ejemplo con los UUIDs reales obtenidos al crear los recursos.
+**Nota**: 
+- Reemplaza los UUIDs de ejemplo con los UUIDs reales obtenidos al crear los recursos.
+- Los endpoints de statement soportan paginación con parámetros `skip` y `limit` (máximo 100 facturas por página).
+- La respuesta incluye `total_invoices` para saber cuántas facturas hay en total.
 
 ## 🧪 Pruebas
 
@@ -256,6 +291,8 @@ mattilda/
 │   │   ├── student.py          # Schemas de Student
 │   │   ├── invoice.py          # Schemas de Invoice
 │   │   ├── payment.py          # Schemas de Payment
+│   │   ├── account.py          # Schemas de estados de cuenta
+│   │   └── pagination.py       # Schema genérico de paginación
 │   │   └── account.py          # Schemas de Account
 │   ├── services/
 │   │   ├── school_service.py   # Lógica de negocio de colegios
@@ -308,9 +345,30 @@ El sistema utiliza Redis para cachear los endpoints de statements (estados de cu
 
 ### Paginación
 
-Los endpoints de listado soportan paginación con los parámetros:
+Todos los endpoints que retornan listas soportan paginación con los parámetros:
 - `skip`: Número de registros a saltar (default: 0)
 - `limit`: Número de registros a retornar (default: 10, max: 100)
+
+**Endpoints con paginación:**
+- Listados: `/api/v1/schools/`, `/api/v1/students/`, `/api/v1/invoices/`
+- Statements: `/api/v1/schools/{school_id}/statement`, `/api/v1/students/{student_id}/statement`
+
+**Estructura de respuesta paginada:**
+```json
+{
+  "items": [...],           // Lista de items de la página actual
+  "total": 150,             // Total de items disponibles
+  "skip": 0,                // Número de items saltados
+  "limit": 10,              // Límite de items por página
+  "has_next": true,         // Indica si hay más páginas
+  "has_previous": false     // Indica si hay páginas anteriores
+}
+```
+
+**Características:**
+- Todos los listados están ordenados por fecha de creación descendente (más recientes primero)
+- Los endpoints de statement calculan los totales (facturado, pagado, pendiente) usando **todas** las facturas, pero solo retornan la lista paginada de facturas
+- La paginación permite manejar grandes volúmenes de datos eficientemente
 
 ## 📝 Preguntas que Responde el Sistema
 
@@ -319,14 +377,18 @@ Los endpoints de listado soportan paginación con los parámetros:
 - `school_id` debe ser un UUID válido
 
 ✅ **¿Cuál es el estado de cuenta de un colegio?**
-- Endpoint: `GET /api/v1/schools/{school_id}/statement`
+- Endpoint: `GET /api/v1/schools/{school_id}/statement?skip=0&limit=10`
 - `school_id` debe ser un UUID válido
-- Incluye: total facturado, total pagado, total pendiente, número de estudiantes y listado de facturas
+- Parámetros opcionales: `skip` (default: 0), `limit` (default: 10, máximo: 100)
+- Incluye: total facturado, total pagado, total pendiente, número de estudiantes y listado de facturas paginado
+- La respuesta incluye `total_invoices` para conocer el total de facturas disponibles
 
 ✅ **¿Cuál es el estado de cuenta de un estudiante?**
-- Endpoint: `GET /api/v1/students/{student_id}/statement`
+- Endpoint: `GET /api/v1/students/{student_id}/statement?skip=0&limit=10`
 - `student_id` debe ser un UUID válido
-- Incluye: total facturado, total pagado, total pendiente y listado de facturas del estudiante
+- Parámetros opcionales: `skip` (default: 0), `limit` (default: 10, máximo: 100)
+- Incluye: total facturado, total pagado, total pendiente y listado de facturas paginado del estudiante
+- La respuesta incluye `total_invoices` para conocer el total de facturas disponibles
 
 ## 🐳 Comandos Docker
 
